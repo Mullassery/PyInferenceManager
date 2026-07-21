@@ -4,4 +4,4 @@
 
 crates/pyinferencemanager-py/src/lib.rs:
 
-# env-dep:CARGO_PKG_VERSION=0.2.0
+# env-dep:CARGO_PKG_VERSION=0.3.0
