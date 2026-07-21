@@ -20,40 +20,40 @@ Unlike routing libraries (LiteLLM, OpenRouter), PyInferenceManager is a **worklo
 
 ```
 Old Way (Manual):
-  Task → Pick Model → Pick API → Handle Errors → Results
+ Task  Pick Model  Pick API  Handle Errors  Results
 
 PyInferenceManager:
-  Task → Auto-decompose → Smart Route → Execute Parallel → Cache → Results
-         └─ cost tracking, health monitoring, budget enforcement
+ Task  Auto-decompose  Smart Route  Execute Parallel  Cache  Results
+ cost tracking, health monitoring, budget enforcement
 ```
 
 ## Core Features
 
-### 🎯 Intelligent Routing
-- **Complexity-aware selection**: Simple tasks → cheap providers (OpenAI), complex tasks → best providers (Claude)
+### Intelligent Routing
+- **Complexity-aware selection**: Simple tasks  cheap providers (OpenAI), complex tasks  best providers (Claude)
 - **Dynamic routing**: Adapts to real-time provider performance metrics
 - **Multi-provider fallback**: Automatic failover with exponential backoff retry
 - **Hardware-aware**: Detects Apple Silicon unified memory, selects appropriate model tier
 
-### 💰 Cost Optimization
+### Cost Optimization
 - **Pre-execution cost estimation**: 30-90% savings by routing to cheapest provider
 - **Budget enforcement**: Hard limits with alert thresholds (80% warning)
 - **Per-provider cost tracking**: Real-time spending dashboard
 - **Cost forecasting**: Predict total spend before execution
 
-### 🚀 Performance & Reliability
+### Performance & Reliability
 - **Latency optimization**: p95/p99 percentile tracking
 - **Health monitoring**: Provider status (Healthy/Degraded/Unavailable)
 - **Load testing framework**: Validate SLA compliance before production
 - **Semantic caching**: Cache document understanding across invocations
 
-### 🔐 Privacy & Control
+### Privacy & Control
 - **Local-first execution**: Run on-device with Ollama, cloud fallback
 - **User-selectable modes**: `LocalFirst` (default) or `CloudFirst`
 - **Privacy enforcement**: `privacy="high"` forces local, ignores cloud availability
 - **Explicit model registration**: No auto-discovery, full control over what runs where
 
-### 📊 Observability
+### Observability
 - **OpenTelemetry tracing**: Distributed trace tracking (trace_id, span_id)
 - **Prometheus metrics**: Request latency, error rates, cost aggregates
 - **Structured JSON logging**: Async, non-blocking, with trace context
@@ -64,39 +64,39 @@ PyInferenceManager:
 ### Cost Savings
 ```
 Task: Document Analysis (10K tokens)
-  OpenAI GPT-4:     $0.30 / request
-  Claude Haiku:     $0.06 / request
-  Ollama Local:     $0.00 / request
+ OpenAI GPT-4: $0.30 / request
+ Claude Haiku: $0.06 / request
+ Ollama Local: $0.00 / request
 
 PyInferenceManager:
-  ✓ Routes simple analysis → Haiku (80% saving vs GPT-4)
-  ✓ Routes complex analysis → Claude (40% saving)
-  ✓ Caches results → $0.00 for repeat queries
-  Result: 30-90% total savings
+ Routes simple analysis  Haiku (80% saving vs GPT-4)
+ Routes complex analysis  Claude (40% saving)
+ Caches results  $0.00 for repeat queries
+ Result: 30-90% total savings
 ```
 
 ### Latency
 ```
 Scenario: 100 concurrent requests
-  Single Provider:   2.5s p99
-  PyInferenceManager (multi-provider): 1.2s p99 (2x faster)
-  
-  Multi-provider fallback enables:
-  - Load balancing across providers
-  - Automatic failover (<100ms)
-  - Parallel stage execution
+ Single Provider: 2.5s p99
+ PyInferenceManager (multi-provider): 1.2s p99 (2x faster)
+ 
+ Multi-provider fallback enables:
+ - Load balancing across providers
+ - Automatic failover (<100ms)
+ - Parallel stage execution
 ```
 
 ### Reliability
 ```
 Provider Failure Handling:
-  Request arrives → Provider health check → Auto-route to fallback
-  Success rate: 99.9% (even with 20% provider unavailability)
-  
-  Retry Strategy:
-  - Retryable errors: 429 (rate limit), 5xx (server error)
-  - Non-retryable: 401 (auth), 403 (permission), 404 (model not found)
-  - Exponential backoff: 1s, 2s, 4s, 8s, 16s
+ Request arrives  Provider health check  Auto-route to fallback
+ Success rate: 99.9% (even with 20% provider unavailability)
+ 
+ Retry Strategy:
+ - Retryable errors: 429 (rate limit), 5xx (server error)
+ - Non-retryable: 401 (auth), 403 (permission), 404 (model not found)
+ - Exponential backoff: 1s, 2s, 4s, 8s, 16s
 ```
 
 ## Quick Start
@@ -121,9 +121,9 @@ orch = Orchestrator(mode="local_first")
 
 # Execute workload
 result = orch.run(
-    task="analyze_document",
-    file="contract.pdf",
-    privacy="low"  # Allow cloud fallback if needed
+ task="analyze_document",
+ file="contract.pdf",
+ privacy="low" # Allow cloud fallback if needed
 )
 
 print(f"Result: {result.output}")
@@ -136,25 +136,25 @@ print(f"Cache hits: {result.cache_hits}")
 
 ```python
 from pyinferencemanager import (
-    Orchestrator, OrchestratorConfig, ModelRegistry,
-    LocalModel, CloudModel, ExecutionMode
+ Orchestrator, OrchestratorConfig, ModelRegistry,
+ LocalModel, CloudModel, ExecutionMode
 )
 
 # Full config: register specific models
 config = OrchestratorConfig(
-    mode=ExecutionMode.LOCAL_FIRST,
-    models=ModelRegistry(
-        local=[
-            LocalModel(name="llama3.2:latest", tier="small"),
-            LocalModel(name="nomic-embed-text", tier="tiny", is_embedding=True),
-        ],
-        cloud=[
-            CloudModel(provider="anthropic", model_id="claude-haiku-4-5"),
-            CloudModel(provider="openai", model_id="gpt-4-turbo"),
-        ]
-    ),
-    cloud_complexity_threshold=0.7,  # Escalate complex tasks to cloud
-    cache_ttl_seconds=3600,
+ mode=ExecutionMode.LOCAL_FIRST,
+ models=ModelRegistry(
+ local=[
+ LocalModel(name="llama3.2:latest", tier="small"),
+ LocalModel(name="nomic-embed-text", tier="tiny", is_embedding=True),
+ ],
+ cloud=[
+ CloudModel(provider="anthropic", model_id="claude-haiku-4-5"),
+ CloudModel(provider="openai", model_id="gpt-4-turbo"),
+ ]
+ ),
+ cloud_complexity_threshold=0.7, # Escalate complex tasks to cloud
+ cache_ttl_seconds=3600,
 )
 
 orch = Orchestrator(config=config)
@@ -167,56 +167,56 @@ result = orch.run(task="question_answering", message="What is...")
 
 ```
 PyInferenceManager
-│
-├── Analyzer
-│   ├── ComplexityScorer (heuristic + embedding-based)
-│   └── TaskClassifier (detect task type)
-│
-├── Planner
-│   ├── DagBuilder (decompose into stages)
-│   ├── Templates (document_analysis, question_answering, etc.)
-│   └── Parallel (Kahn's topological sort for stages)
-│
-├── Router
-│   ├── ExecutionRouter (LocalFirst/CloudFirst modes)
-│   ├── MultiProviderRouter (provider selection)
-│   └── DynamicRouter (performance-based routing)
-│
-├── Optimizer
-│   ├── CostTracker (per-engine metrics)
-│   ├── CostEstimator (pre-execution prediction)
-│   ├── RetryStrategy (exponential backoff)
-│   ├── BudgetEnforcer (cost limits)
-│   └── ProviderHealth (track provider status)
-│
-├── Engines
-│   ├── OllamaClient (local inference via HTTP)
-│   ├── AnthropicClient (Claude API)
-│   └── OpenAIClient (GPT API)
-│
-├── Cache
-│   ├── SemanticCache (SQLite + sqlite-vec)
-│   ├── EmbeddingKey (task to cache key)
-│   └── CacheEntry (TTL + freshness)
-│
-└── Observability
-    ├── TraceContext (distributed tracing)
-    ├── MetricsCollector (latency, costs, throughput)
-    ├── StructuredLogger (JSON logging)
-    └── Exporters (Prometheus, Jaeger, Logging)
+
+ Analyzer
+ ComplexityScorer (heuristic + embedding-based)
+ TaskClassifier (detect task type)
+
+ Planner
+ DagBuilder (decompose into stages)
+ Templates (document_analysis, question_answering, etc.)
+ Parallel (Kahn's topological sort for stages)
+
+ Router
+ ExecutionRouter (LocalFirst/CloudFirst modes)
+ MultiProviderRouter (provider selection)
+ DynamicRouter (performance-based routing)
+
+ Optimizer
+ CostTracker (per-engine metrics)
+ CostEstimator (pre-execution prediction)
+ RetryStrategy (exponential backoff)
+ BudgetEnforcer (cost limits)
+ ProviderHealth (track provider status)
+
+ Engines
+ OllamaClient (local inference via HTTP)
+ AnthropicClient (Claude API)
+ OpenAIClient (GPT API)
+
+ Cache
+ SemanticCache (SQLite + sqlite-vec)
+ EmbeddingKey (task to cache key)
+ CacheEntry (TTL + freshness)
+
+ Observability
+ TraceContext (distributed tracing)
+ MetricsCollector (latency, costs, throughput)
+ StructuredLogger (JSON logging)
+ Exporters (Prometheus, Jaeger, Logging)
 ```
 
 ## Version & Status
 
 **Current:** v0.2.0 (Production Observability Release)
 
-### Phase 2 Complete ✅
+### Phase 2 Complete 
 - Multi-provider support (Anthropic + OpenAI)
 - Retry logic with exponential backoff
 - Cost estimation and health monitoring
 - Error classification
 
-### Phase 3 Complete ✅
+### Phase 3 Complete 
 - Production provider execution
 - Load testing framework (latency percentiles, SLA validation)
 - Embedding-based complexity scoring
@@ -234,12 +234,12 @@ PyInferenceManager
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Avg latency | <1s | 0.5s ✓ |
-| P99 latency | <3s | 1.9s ✓ |
-| Success rate | ≥99% | 99.5% ✓ |
-| Cost savings | 30-90% | Verified ✓ |
-| Cache hit ratio | ≥80% | 85% ✓ |
-| Failover time | <100ms | 50ms ✓ |
+| Avg latency | <1s | 0.5s |
+| P99 latency | <3s | 1.9s |
+| Success rate | 99% | 99.5% |
+| Cost savings | 30-90% | Verified |
+| Cache hit ratio | 80% | 85% |
+| Failover time | <100ms | 50ms |
 
 ## Production Checklist
 
@@ -295,4 +295,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 **Built with:** Rust (core) + Python (bindings) + OpenTelemetry (observability)
 
-**Join us** in building the OS for AI execution. Star this repo if you find it useful! 🌟
+**Join us** in building the OS for AI execution. Star this repo if you find it useful! 
