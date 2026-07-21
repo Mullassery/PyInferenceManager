@@ -1,0 +1,13 @@
+/Users/georgimullassery/pyinferencemanager/target/release/deps/tracing_opentelemetry-bf43810edd94e5ae.d: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/metrics.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/layer.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/span_ext.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/tracer.rs
+
+/Users/georgimullassery/pyinferencemanager/target/release/deps/libtracing_opentelemetry-bf43810edd94e5ae.rlib: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/metrics.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/layer.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/span_ext.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/tracer.rs
+
+/Users/georgimullassery/pyinferencemanager/target/release/deps/libtracing_opentelemetry-bf43810edd94e5ae.rmeta: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/metrics.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/layer.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/span_ext.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/tracer.rs
+
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/lib.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/metrics.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/layer.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/span_ext.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-opentelemetry-0.25.0/src/tracer.rs:
+
+# env-dep:CARGO_PKG_VERSION=0.25.0

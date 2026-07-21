@@ -1,0 +1,9 @@
+/Users/georgimullassery/pyinferencemanager/target/release/deps/opentelemetry_semantic_conventions-1437dbd684515950.d: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/resource.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/trace.rs
+
+/Users/georgimullassery/pyinferencemanager/target/release/deps/libopentelemetry_semantic_conventions-1437dbd684515950.rlib: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/resource.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/trace.rs
+
+/Users/georgimullassery/pyinferencemanager/target/release/deps/libopentelemetry_semantic_conventions-1437dbd684515950.rmeta: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/resource.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/trace.rs
+
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/lib.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/resource.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.15.0/src/trace.rs:

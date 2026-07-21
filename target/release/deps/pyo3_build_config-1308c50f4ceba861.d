@@ -1,0 +1,14 @@
+/Users/georgimullassery/pyinferencemanager/target/release/deps/pyo3_build_config-1308c50f4ceba861.d: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/errors.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/impl_.rs /Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config-file.txt /Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config.txt
+
+/Users/georgimullassery/pyinferencemanager/target/release/deps/libpyo3_build_config-1308c50f4ceba861.rlib: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/errors.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/impl_.rs /Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config-file.txt /Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config.txt
+
+/Users/georgimullassery/pyinferencemanager/target/release/deps/libpyo3_build_config-1308c50f4ceba861.rmeta: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/errors.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/impl_.rs /Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config-file.txt /Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config.txt
+
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/lib.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/errors.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.23.5/src/impl_.rs:
+/Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config-file.txt:
+/Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out/pyo3-build-config.txt:
+
+# env-dep:CARGO_PKG_VERSION=0.23.5
+# env-dep:OUT_DIR=/Users/georgimullassery/pyinferencemanager/target/release/build/pyo3-build-config-30aa340eff664c14/out
