@@ -183,11 +183,18 @@ All errors use `thiserror` in `error.rs`:
 - ✅ 205 unit tests passing (up from 197)
 - ✅ **Phase 3 Week 16 Complete: Load testing infrastructure ready**
 
-**Phase 3 Week 17-20 Next:**
+**Phase 3 Week 18 Status (COMPLETE):**
+- ✅ OpenTelemetry trace instrumentation (TraceContext, TraceSpan, TraceEvent)
+- ✅ Metrics collection framework (MetricsCollector with latency/cost/cache/throughput)
+- ✅ Structured logging with trace context
+- ✅ Export backends (Prometheus, Jaeger, Logging)
+- ✅ 261 total tests passing (+38 observability tests)
+- ✅ **Phase 3 Week 18 Complete: Production observability ready**
+
+**Phase 3 Week 19-20 Next:**
 - Real load testing with providers (100+ concurrent)
-- Dynamic embedding-based complexity scoring
 - Cost tracking against budget limits
-- Production observability and monitoring
+- Provider health trends and dynamic routing
 
 ## Notes on Integration with PyTokenCalc & StatGuardian
 

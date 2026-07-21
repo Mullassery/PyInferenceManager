@@ -18,9 +18,15 @@ sqlite-vec.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-opentelemetry.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 sha2.workspace = true
+opentelemetry.workspace = true
+opentelemetry-jaeger.workspace = true
+opentelemetry-prometheus.workspace = true
+parking_lot.workspace = true
 futures = "0.3"
 
 [dependencies.pyo3]
