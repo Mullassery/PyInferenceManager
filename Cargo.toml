@@ -1,0 +1,36 @@
+[workspace]
+members = ["crates/pyinferencemanager-core", "crates/pyinferencemanager-py"]
+resolver = "2"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.82"
+authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/Mullassery/pyinferencemanager"
+
+[workspace.dependencies]
+tokio         = { version = "1.53", features = ["full"] }
+serde         = { version = "1.0", features = ["derive"] }
+serde_json    = "1.0"
+reqwest       = { version = "0.13", features = ["json"] }
+rusqlite      = { version = "0.40", features = ["bundled", "chrono", "uuid", "load_extension"] }
+sqlite-vec    = "0.1"
+thiserror     = "2.0"
+anyhow        = "1.0"
+uuid          = { version = "1.0", features = ["v4", "serde"] }
+chrono        = { version = "0.4", features = ["serde"] }
+sha2          = "0.10"
+tracing       = "0.1"
+once_cell     = "1.0"
+pyo3          = { version = "0.23", features = ["extension-module", "abi3-py310"] }
+
+[profile.release]
+opt-level     = 3
+lto           = true
+codegen-units = 1
+
+[profile.release-python]
+inherits      = "release"
+strip         = "symbols"

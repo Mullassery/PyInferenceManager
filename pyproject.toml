@@ -1,0 +1,31 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "pyinferencemanager"
+dynamic = ["version"]
+description = "Intelligent AI workload orchestrator — local-first, hardware-aware, semantically cached"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
+requires-python = ">=3.10"
+keywords = ["ai", "orchestrator", "llm", "ollama", "anthropic", "local-first"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+]
+dependencies = ["anthropic>=0.100.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "maturin>=1.0", "ruff>=0.5.0"]
+
+[tool.maturin]
+python-source = "."
+module-name = "pyinferencemanager._core"
+manifest-path = "crates/pyinferencemanager-py/Cargo.toml"

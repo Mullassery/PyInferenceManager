@@ -1,0 +1,10 @@
+/Users/georgimullassery/pyinferencemanager/target/debug/deps/memoffset-0edd021522e027a8.d: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/raw_field.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/offset_of.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/span_of.rs
+
+/Users/georgimullassery/pyinferencemanager/target/debug/deps/libmemoffset-0edd021522e027a8.rlib: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/raw_field.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/offset_of.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/span_of.rs
+
+/Users/georgimullassery/pyinferencemanager/target/debug/deps/libmemoffset-0edd021522e027a8.rmeta: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/raw_field.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/offset_of.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/span_of.rs
+
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/lib.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/raw_field.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/offset_of.rs:
+/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/memoffset-0.9.1/src/span_of.rs:
