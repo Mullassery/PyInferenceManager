@@ -3,11 +3,13 @@ pub mod scenarios;
 pub mod provider_executor;
 pub mod load_tester;
 pub mod real_load_tester;
+pub mod provider_load_test;
 
 pub use executor::{ExecutionPlanner, ExecutorConfig, ProviderFallbackChain, RetryTracker};
 pub use provider_executor::{ProviderExecutor, ProviderExecutionRequest, ProviderExecutionResult};
 pub use load_tester::{LoadTester, LoadTestConfig, LoadTestResult};
 pub use real_load_tester::{RealLoadTester, RealLoadTestConfig, RealLoadTestResult};
+pub use provider_load_test::{ProviderLoadTester, ProviderLoadTestConfig, ProviderLoadTestResult};
 
 use crate::cache::SemanticCache;
 use crate::engines::ProviderHealth;
