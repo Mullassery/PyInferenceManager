@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "pyinferencemanager"
 dynamic = ["version"]
-description = "Intelligent AI workload orchestrator — multi-provider routing, cost optimization, semantic caching, with dynamic routing and budget enforcement"
+description = "Intelligent AI workload orchestrator. Multi-provider routing, cost optimization, semantic caching, dynamic routing with budget enforcement. Production observability included."
 readme = "README.md"
 
 authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
