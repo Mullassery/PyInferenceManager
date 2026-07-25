@@ -7,7 +7,6 @@ version = "0.3.0"
 edition = "2021"
 rust-version = "1.82"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
-license = "MIT"
 repository = "https://github.com/Mullassery/pyinferencemanager"
 
 [workspace.dependencies]

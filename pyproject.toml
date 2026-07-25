@@ -7,7 +7,7 @@ name = "pyinferencemanager"
 dynamic = ["version"]
 description = "Intelligent AI workload orchestrator — multi-provider routing, cost optimization, semantic caching, with dynamic routing and budget enforcement"
 readme = "README.md"
-license = { text = "MIT" }
+
 authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
 requires-python = ">=3.10"
 keywords = [
