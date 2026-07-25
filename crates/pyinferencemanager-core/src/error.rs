@@ -37,6 +37,9 @@ pub enum Error {
 
     #[error("Unknown error: {0}")]
     Unknown(String),
+
+    #[error("Backend error: {0}")]
+    BackendError(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

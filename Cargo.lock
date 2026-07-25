@@ -1318,6 +1318,7 @@ name = "pyinferencemanager-core"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "chrono",
  "futures",
  "opentelemetry 0.22.0",

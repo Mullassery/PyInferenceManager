@@ -17,6 +17,15 @@ pub enum CloudProvider {
     OpenAI { model: String },
 }
 
+impl CloudProvider {
+    pub fn key(&self) -> String {
+        match self {
+            CloudProvider::Anthropic { model } => format!("anthropic:{}", model),
+            CloudProvider::OpenAI { model } => format!("openai:{}", model),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum NodeStatus {
     Pending,
@@ -179,12 +188,12 @@ mod tests {
 
     #[test]
     fn test_complexity_clamping() {
-        let node = DagNode::new(0, "test".to_string(), ExecutionEngine::CacheLookup)
-            .with_complexity(2.0);
+        let node =
+            DagNode::new(0, "test".to_string(), ExecutionEngine::CacheLookup).with_complexity(2.0);
         assert_eq!(node.complexity_score, 1.0);
 
-        let node = DagNode::new(0, "test".to_string(), ExecutionEngine::CacheLookup)
-            .with_complexity(-0.5);
+        let node =
+            DagNode::new(0, "test".to_string(), ExecutionEngine::CacheLookup).with_complexity(-0.5);
         assert_eq!(node.complexity_score, 0.0);
     }
 
@@ -199,8 +208,16 @@ mod tests {
     #[test]
     fn test_dag_add_nodes_and_edges() {
         let mut dag = Dag::new("task1".to_string());
-        dag.add_node(DagNode::new(0, "node0".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(1, "node1".to_string(), ExecutionEngine::CacheLookup));
+        dag.add_node(DagNode::new(
+            0,
+            "node0".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            1,
+            "node1".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
         dag.add_edge(0, 1);
 
         assert_eq!(dag.nodes.len(), 2);
@@ -210,9 +227,21 @@ mod tests {
     #[test]
     fn test_execution_stages_linear() {
         let mut dag = Dag::new("task1".to_string());
-        dag.add_node(DagNode::new(0, "node0".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(1, "node1".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(2, "node2".to_string(), ExecutionEngine::CacheLookup));
+        dag.add_node(DagNode::new(
+            0,
+            "node0".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            1,
+            "node1".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            2,
+            "node2".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
         dag.add_edge(0, 1);
         dag.add_edge(1, 2);
 
@@ -226,9 +255,21 @@ mod tests {
     #[test]
     fn test_execution_stages_parallel() {
         let mut dag = Dag::new("task1".to_string());
-        dag.add_node(DagNode::new(0, "node0".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(1, "node1".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(2, "node2".to_string(), ExecutionEngine::CacheLookup));
+        dag.add_node(DagNode::new(
+            0,
+            "node0".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            1,
+            "node1".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            2,
+            "node2".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
         dag.add_edge(0, 1);
         dag.add_edge(0, 2);
 
@@ -243,10 +284,26 @@ mod tests {
     #[test]
     fn test_execution_stages_diamond() {
         let mut dag = Dag::new("task1".to_string());
-        dag.add_node(DagNode::new(0, "node0".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(1, "node1".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(2, "node2".to_string(), ExecutionEngine::CacheLookup));
-        dag.add_node(DagNode::new(3, "node3".to_string(), ExecutionEngine::CacheLookup));
+        dag.add_node(DagNode::new(
+            0,
+            "node0".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            1,
+            "node1".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            2,
+            "node2".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
+        dag.add_node(DagNode::new(
+            3,
+            "node3".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
         dag.add_edge(0, 1);
         dag.add_edge(0, 2);
         dag.add_edge(1, 3);
