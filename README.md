@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Rust](https://img.shields.io/badge/rust-1.82+-orange.svg)](https://www.rust-lang.org/)
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Proprietary License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PyPI Version](https://img.shields.io/pypi/v/pyinferencemanager.svg)](https://pypi.org/project/pyinferencemanager/)
 [![Tests](https://img.shields.io/badge/tests-299%20passing-brightgreen.svg)]()
 
@@ -289,7 +289,7 @@ Contributions welcome! Areas of impact:
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+Proprietary License — see [LICENSE](LICENSE) for details.
 
 ---
 
