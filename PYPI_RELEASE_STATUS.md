@@ -50,7 +50,7 @@ pip install pyinferencemanager==0.2.0
 **PyPI URL:** https://pypi.org/project/pyinferencemanager/  
 **Package Name:** `pyinferencemanager`  
 **Version:** 0.2.0  
-**License:** MIT  
+**License:** Proprietary  
 **Author:** Georgi Mammen Mullassery  
 **Repository:** https://github.com/Mullassery/pyinferencemanager
 

@@ -98,7 +98,7 @@ poetry publish
 ### PyPI Package Details
 - **Name:** `pyinferencemanager`
 - **Current Version:** 0.2.0
-- **License:** MIT
+- **License:** Proprietary
 - **Repository:** https://github.com/Mullassery/pyinferencemanager
 - **Author:** Georgi Mammen Mullassery
 

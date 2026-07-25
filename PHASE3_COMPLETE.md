@@ -157,7 +157,7 @@ PyInferenceManager (Rust Core + Python Bindings)
 - **GitHub:** https://github.com/Mullassery/pyinferencemanager
 - **Branch:** main (production-ready)
 - **Tags:** v0.2.0 (release tag)
-- **License:** MIT
+- **License:** Proprietary
 
 ### Documentation
 - **README:** Comprehensive with benchmarks, architecture, examples
@@ -325,7 +325,7 @@ PyInferenceManager (Rust Core + Python Bindings)
 
 ## 📄 License & Attribution
 
-**License:** MIT - See [LICENSE](LICENSE) for details
+**License:** Proprietary - See [LICENSE](LICENSE) for details
 
 **Built with:**
 - Rust (core engine)
