@@ -1,46 +1,42 @@
-# Mark all non-Python code as vendored or generated
-# This ensures Python is detected as the primary language
+# Aggressive language detection: mark everything non-Python as non-detectable
 
-# Rust/C/C++ implementation code
-crates/** linguist-vendored=true
-src/rust/** linguist-vendored=true
-src/c/** linguist-vendored=true
-src/cpp/** linguist-vendored=true
-*.rs linguist-vendored=true
-*.c linguist-vendored=true
-*.h linguist-vendored=true
-*.cpp linguist-vendored=true
-*.cc linguist-vendored=true
-*.cxx linguist-vendored=true
+# Hide all C/C++ files
+*.c linguist-detectable=false
+*.h linguist-detectable=false
+*.cpp linguist-detectable=false
+*.cc linguist-detectable=false
+*.cxx linguist-detectable=false
+*.C linguist-detectable=false
+*.c++ linguist-detectable=false
 
-# Pawn and other languages
-*.pwn linguist-vendored=true
-*.pawn linguist-vendored=true
+# Hide Rust
+*.rs linguist-detectable=false
 
-# Build files and makefiles
-Makefile linguist-vendored=true
-makefile linguist-vendored=true
-*.make linguist-vendored=true
+# Hide Pawn
+*.pwn linguist-detectable=false
+*.pawn linguist-detectable=false
 
-# Build artifacts
-build/** linguist-generated=true
-dist/** linguist-generated=true
-target/** linguist-generated=true
-*.so linguist-generated=true
-*.pyd linguist-generated=true
-*.dylib linguist-generated=true
-*.dll linguist-generated=true
-*.a linguist-generated=true
-*.o linguist-generated=true
-*.so.* linguist-generated=true
-*.egg-info/** linguist-generated=true
-__pycache__/** linguist-generated=true
+# Hide Makefiles and build config
+Makefile linguist-detectable=false
+makefile linguist-detectable=false
+*.make linguist-detectable=false
 
-# DTrace
-*.d linguist-vendored=true
+# Hide DTrace
+*.d linguist-detectable=false
 
-# Force Python as primary language
-*.py linguist-language=Python
-pyproject.toml linguist-language=Python
-setup.py linguist-language=Python
-*.pyi linguist-language=Python
+# Hide all build/generated artifacts
+build/** linguist-detectable=false
+dist/** linguist-detectable=false
+target/** linguist-detectable=false
+*.so linguist-detectable=false
+*.pyd linguist-detectable=false
+*.dylib linguist-detectable=false
+*.dll linguist-detectable=false
+*.a linguist-detectable=false
+*.o linguist-detectable=false
+
+# Force Python as the ONLY detectable language
+*.py linguist-detectable=true
+*.pyi linguist-detectable=true
+pyproject.toml linguist-detectable=true
+setup.py linguist-detectable=true
