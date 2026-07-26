@@ -3,10 +3,7 @@ use crate::types::{CloudModelEntry, CloudProvider, ModelRegistry, OrchestratorCo
 pub struct MultiProviderRouter;
 
 impl MultiProviderRouter {
-    pub fn select_provider(
-        config: &OrchestratorConfig,
-        complexity: f32,
-    ) -> Option<CloudProvider> {
+    pub fn select_provider(config: &OrchestratorConfig, complexity: f32) -> Option<CloudProvider> {
         let mut models = config.models.cloud.clone();
         models.sort_by_key(|m| m.priority);
 

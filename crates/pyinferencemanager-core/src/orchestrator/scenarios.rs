@@ -33,11 +33,10 @@ mod integration_scenarios {
     /// Scenario: Task fails due to rate limit, retries after backoff
     #[test]
     fn scenario_rate_limit_retry() {
-        let config = RetryConfig::new(3)
-            .with_backoff(BackoffStrategy::Exponential {
-                initial_ms: 100,
-                max_ms: 5000,
-            });
+        let config = RetryConfig::new(3).with_backoff(BackoffStrategy::Exponential {
+            initial_ms: 100,
+            max_ms: 5000,
+        });
 
         let mut retry_tracker = RetryTracker::new(config);
 
@@ -122,23 +121,22 @@ mod integration_scenarios {
         assert!(!ErrorClassifier::is_retryable(Some(401), "Unauthorized"));
 
         // Server error should be retryable
-        assert!(ErrorClassifier::is_retryable(Some(503), "Service unavailable"));
+        assert!(ErrorClassifier::is_retryable(
+            Some(503),
+            "Service unavailable"
+        ));
 
         // Timeout should be retryable
-        assert!(ErrorClassifier::is_retryable(
-            Some(408),
-            "Request timeout"
-        ));
+        assert!(ErrorClassifier::is_retryable(Some(408), "Request timeout"));
     }
 
     /// Scenario: Complete retry chain with exponential backoff
     #[test]
     fn scenario_complete_retry_chain() {
-        let config = RetryConfig::new(3)
-            .with_backoff(BackoffStrategy::Exponential {
-                initial_ms: 100,
-                max_ms: 5000,
-            });
+        let config = RetryConfig::new(3).with_backoff(BackoffStrategy::Exponential {
+            initial_ms: 100,
+            max_ms: 5000,
+        });
 
         let mut tracker = RetryTracker::new(config);
         let mut total_backoff = Duration::from_millis(0);
@@ -232,6 +230,6 @@ mod integration_scenarios {
 
         let available = chain.available();
         assert_eq!(available.len(), 3); // all available (healthy + degraded)
-        // But healthy should be preferred in actual execution
+                                        // But healthy should be preferred in actual execution
     }
 }

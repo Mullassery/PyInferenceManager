@@ -152,21 +152,18 @@ mod tests {
         assert_eq!(MemoryTier::from_bytes(32 * 1_073_741_824), MemoryTier::Gb32);
         assert_eq!(MemoryTier::from_bytes(64 * 1_073_741_824), MemoryTier::Gb64);
         assert_eq!(MemoryTier::from_bytes(96 * 1_073_741_824), MemoryTier::Gb96);
-        assert_eq!(MemoryTier::from_bytes(192 * 1_073_741_824), MemoryTier::Gb192);
+        assert_eq!(
+            MemoryTier::from_bytes(192 * 1_073_741_824),
+            MemoryTier::Gb192
+        );
     }
 
     #[test]
     fn test_memory_tier_boundaries() {
         // Just below 9GB should be Gb8
-        assert_eq!(
-            MemoryTier::from_bytes(8_999_999_999),
-            MemoryTier::Gb8
-        );
+        assert_eq!(MemoryTier::from_bytes(8_999_999_999), MemoryTier::Gb8);
         // 9GB should be Gb16
-        assert_eq!(
-            MemoryTier::from_bytes(9 * 1_073_741_824),
-            MemoryTier::Gb16
-        );
+        assert_eq!(MemoryTier::from_bytes(9 * 1_073_741_824), MemoryTier::Gb16);
     }
 
     #[test]

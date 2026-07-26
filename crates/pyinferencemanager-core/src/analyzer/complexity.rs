@@ -21,9 +21,20 @@ impl ComplexityScorer {
 
         // Multi-word phrases indicating high complexity
         let complex_phrases = [
-            "across all", "compare", "contradictions", "analyze", "synthesize",
-            "pattern", "trend", "relationship", "correlation", "root cause",
-            "evaluate", "assess", "reasoning", "critical analysis",
+            "across all",
+            "compare",
+            "contradictions",
+            "analyze",
+            "synthesize",
+            "pattern",
+            "trend",
+            "relationship",
+            "correlation",
+            "root cause",
+            "evaluate",
+            "assess",
+            "reasoning",
+            "critical analysis",
         ];
 
         for phrase in &complex_phrases {
@@ -34,8 +45,7 @@ impl ComplexityScorer {
 
         // Simple queries
         let simple_patterns = [
-            "what is", "define", "list", "where is", "when was",
-            "who is", "how many", "give me",
+            "what is", "define", "list", "where is", "when was", "who is", "how many", "give me",
         ];
 
         for pattern in &simple_patterns {

@@ -101,16 +101,20 @@ impl CostEstimator {
 
     /// Find cheapest provider for task
     pub fn cheapest_provider(estimates: &[CostEstimate]) -> Option<&CostEstimate> {
-        estimates
-            .iter()
-            .min_by(|a, b| a.total_estimated_cost.partial_cmp(&b.total_estimated_cost).unwrap())
+        estimates.iter().min_by(|a, b| {
+            a.total_estimated_cost
+                .partial_cmp(&b.total_estimated_cost)
+                .unwrap()
+        })
     }
 
     /// Find most capable provider (highest cost typically means more capable)
     pub fn most_capable_provider(estimates: &[CostEstimate]) -> Option<&CostEstimate> {
-        estimates
-            .iter()
-            .max_by(|a, b| a.total_estimated_cost.partial_cmp(&b.total_estimated_cost).unwrap())
+        estimates.iter().max_by(|a, b| {
+            a.total_estimated_cost
+                .partial_cmp(&b.total_estimated_cost)
+                .unwrap()
+        })
     }
 }
 

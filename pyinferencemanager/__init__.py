@@ -58,4 +58,13 @@ class Orchestrator:
         """
         return self._orchestrator.plan(task=task)
 
+    def provider_ranking(self):
+        """
+        Get the current ranking of providers based on real-time performance metrics.
+
+        Returns:
+            List of (provider_name, health_score) tuples sorted by health score
+        """
+        return self._orchestrator.provider_ranking()
+
 __all__ = ["__version__", "Orchestrator"]

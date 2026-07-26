@@ -1,7 +1,7 @@
+use super::embedding_key::EmbeddingKey;
+use super::sqlite_store::SqliteCacheStore;
 use crate::types::{CacheEntry, CacheHit};
 use crate::Result;
-use super::sqlite_store::SqliteCacheStore;
-use super::embedding_key::EmbeddingKey;
 use uuid::Uuid;
 
 pub struct SemanticCache {
@@ -25,7 +25,12 @@ impl SemanticCache {
         self
     }
 
-    pub async fn lookup(&self, description: &str, task_kind: &str, _content: &[u8]) -> Result<Option<CacheHit>> {
+    pub async fn lookup(
+        &self,
+        description: &str,
+        task_kind: &str,
+        _content: &[u8],
+    ) -> Result<Option<CacheHit>> {
         let key_hash = EmbeddingKey::hash_task(description, task_kind);
 
         if let Some(entry) = self.store.lookup(&key_hash, task_kind)? {
@@ -37,7 +42,13 @@ impl SemanticCache {
         Ok(None)
     }
 
-    pub async fn store(&self, description: &str, task_kind: &str, result: String, _content: &[u8]) -> Result<()> {
+    pub async fn store(
+        &self,
+        description: &str,
+        task_kind: &str,
+        result: String,
+        _content: &[u8],
+    ) -> Result<()> {
         let key_hash = EmbeddingKey::hash_task(description, task_kind);
 
         let entry = CacheEntry::new(
@@ -109,10 +120,17 @@ mod tests {
         let cache = create_temp_cache()?;
 
         cache
-            .store("analyze pdf", "document_analysis", "result text".to_string(), b"content")
+            .store(
+                "analyze pdf",
+                "document_analysis",
+                "result text".to_string(),
+                b"content",
+            )
             .await?;
 
-        let hit = cache.lookup("analyze pdf", "document_analysis", b"content").await?;
+        let hit = cache
+            .lookup("analyze pdf", "document_analysis", b"content")
+            .await?;
         assert!(hit.is_some());
         assert_eq!(hit.unwrap().entry.result, "result text");
 
@@ -123,7 +141,9 @@ mod tests {
     async fn test_lookup_miss() -> Result<()> {
         let cache = create_temp_cache()?;
 
-        let hit = cache.lookup("nonexistent", "document_analysis", b"").await?;
+        let hit = cache
+            .lookup("nonexistent", "document_analysis", b"")
+            .await?;
         assert!(hit.is_none());
 
         Ok(())

@@ -12,7 +12,12 @@ impl LoggingExporter {
     pub fn export_span(&self, span: &TraceSpan) -> String {
         format!(
             "trace_id={} span_id={} parent_span_id={:?} operation={} status={} duration_ms={:?}",
-            span.trace_id, span.span_id, span.parent_span_id, span.operation, span.status, span.duration_ms
+            span.trace_id,
+            span.span_id,
+            span.parent_span_id,
+            span.operation,
+            span.status,
+            span.duration_ms
         )
     }
 }

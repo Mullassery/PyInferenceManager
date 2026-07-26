@@ -34,7 +34,11 @@ impl CloudClient {
         self.complete_via_http(prompt, max_tokens).await
     }
 
-    async fn complete_via_http(&self, prompt: &str, max_tokens: u32) -> crate::Result<CloudResponse> {
+    async fn complete_via_http(
+        &self,
+        prompt: &str,
+        max_tokens: u32,
+    ) -> crate::Result<CloudResponse> {
         let url = "https://api.anthropic.com/v1/messages";
 
         let request_body = serde_json::json!({

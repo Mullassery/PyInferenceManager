@@ -9,10 +9,10 @@ pub struct EmbeddingComplexityScorer {
 
 #[derive(Debug, Clone)]
 pub struct ComplexityAnalysis {
-    pub score: f32,              // 0.0-1.0
-    pub reasoning: String,        // Why this score
-    pub similar_anchor: String,   // Which anchor it's similar to
-    pub confidence: f32,          // How confident in this score
+    pub score: f32,             // 0.0-1.0
+    pub reasoning: String,      // Why this score
+    pub similar_anchor: String, // Which anchor it's similar to
+    pub confidence: f32,        // How confident in this score
 }
 
 impl EmbeddingComplexityScorer {
@@ -177,7 +177,8 @@ mod tests {
     #[test]
     fn test_score_complex_task() {
         let scorer = EmbeddingComplexityScorer::new();
-        let analysis = scorer.score("Analyze and synthesize all contradictions in this complex multi-part document");
+        let analysis = scorer
+            .score("Analyze and synthesize all contradictions in this complex multi-part document");
         assert!(analysis.score > 0.3);
         assert!(analysis.confidence > 0.0);
     }

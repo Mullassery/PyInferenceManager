@@ -7,7 +7,7 @@ use std::sync::Arc;
 pub struct BudgetConfig {
     pub max_cost_usd: f32,
     pub max_requests: u32,
-    pub alert_threshold_percent: f32,  // Alert at 80% of budget
+    pub alert_threshold_percent: f32, // Alert at 80% of budget
     pub enforce_hard_limit: bool,
 }
 
@@ -96,8 +96,7 @@ impl BudgetEnforcer {
         let requests = self.request_count.load(Ordering::Relaxed);
 
         !self.config.enforce_hard_limit
-            || (current < self.config.max_cost_usd
-                && requests < self.config.max_requests as u64)
+            || (current < self.config.max_cost_usd && requests < self.config.max_requests as u64)
     }
 
     pub fn get_status(&self) -> BudgetStatus {

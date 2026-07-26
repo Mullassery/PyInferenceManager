@@ -14,11 +14,10 @@ pub struct ExecutorConfig {
 impl Default for ExecutorConfig {
     fn default() -> Self {
         ExecutorConfig {
-            retry_config: RetryConfig::new(3)
-                .with_backoff(BackoffStrategy::Exponential {
-                    initial_ms: 100,
-                    max_ms: 5000,
-                }),
+            retry_config: RetryConfig::new(3).with_backoff(BackoffStrategy::Exponential {
+                initial_ms: 100,
+                max_ms: 5000,
+            }),
             enable_cost_estimation: true,
             enable_health_check: true,
         }
@@ -60,8 +59,7 @@ impl ProviderFallbackChain {
 
     /// Get all available providers in priority order
     pub fn available(&self) -> Vec<String> {
-        self
-            .providers
+        self.providers
             .iter()
             .filter(|p| {
                 let status = self.health.get_status(p);
@@ -143,11 +141,7 @@ impl ExecutionPlanner {
             return Vec::new();
         }
 
-        let attachment_size: usize = task
-            .attachments
-            .iter()
-            .map(|a| a.content.len())
-            .sum();
+        let attachment_size: usize = task.attachments.iter().map(|a| a.content.len()).sum();
 
         let complexity = task.options.preferred_speed; // simplified: 0=quality (complex), 1=speed (simple)
         let complexity_score = 1.0 - complexity; // invert for scoring

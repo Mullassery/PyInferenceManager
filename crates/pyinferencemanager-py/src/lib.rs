@@ -1,5 +1,5 @@
+use pyinferencemanager_core::{ExecutionMode, Orchestrator, OrchestratorConfig};
 use pyo3::prelude::*;
-use pyinferencemanager_core::{Orchestrator, OrchestratorConfig, ExecutionMode};
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -17,13 +17,14 @@ impl PyOrchestrator {
         let execution_mode = match mode {
             "local_first" => ExecutionMode::LocalFirst,
             "cloud_first" => ExecutionMode::CloudFirst,
-            _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                "mode must be 'local_first' or 'cloud_first'",
-            )),
+            _ => {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    "mode must be 'local_first' or 'cloud_first'",
+                ))
+            }
         };
 
-        let config = OrchestratorConfig::default()
-            .with_execution_mode(execution_mode);
+        let config = OrchestratorConfig::default().with_execution_mode(execution_mode);
 
         let runtime = tokio::runtime::Runtime::new()
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
@@ -46,23 +47,23 @@ impl PyOrchestrator {
         message: Option<&str>,
         privacy: &str,
     ) -> PyResult<PyWorkloadResult> {
-        use pyinferencemanager_core::types::{Task, PrivacyLevel, Attachment, AttachmentKind};
+        use pyinferencemanager_core::types::{Attachment, AttachmentKind, PrivacyLevel, Task};
 
         let privacy_level = match privacy {
             "high" => PrivacyLevel::High,
             "low" => PrivacyLevel::Low,
-            _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                "privacy must be 'high' or 'low'",
-            )),
+            _ => {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    "privacy must be 'high' or 'low'",
+                ))
+            }
         };
 
-        let mut py_task = Task::new(task.to_string())
-            .with_options(
-                pyinferencemanager_core::types::TaskOptions {
-                    privacy: privacy_level,
-                    ..Default::default()
-                }
-            );
+        let mut py_task =
+            Task::new(task.to_string()).with_options(pyinferencemanager_core::types::TaskOptions {
+                privacy: privacy_level,
+                ..Default::default()
+            });
 
         if let Some(file_path) = file {
             if let Ok(content) = std::fs::read(file_path) {
@@ -86,12 +87,12 @@ impl PyOrchestrator {
             py_task = py_task.with_attachment(attachment);
         }
 
-        let orchestrator = self.inner.lock()
-            .map_err(|_| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
-                "Failed to acquire orchestrator lock"
-            ))?;
+        let orchestrator = self.inner.lock().map_err(|_| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Failed to acquire orchestrator lock")
+        })?;
 
-        let result = self.runtime
+        let result = self
+            .runtime
             .block_on(orchestrator.execute(py_task))
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
 
@@ -103,12 +104,12 @@ impl PyOrchestrator {
 
         let py_task = Task::new(task.to_string());
 
-        let orchestrator = self.inner.lock()
-            .map_err(|_| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
-                "Failed to acquire orchestrator lock"
-            ))?;
+        let orchestrator = self.inner.lock().map_err(|_| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Failed to acquire orchestrator lock")
+        })?;
 
-        let plan = self.runtime
+        let plan = self
+            .runtime
             .block_on(orchestrator.plan(&py_task))
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
 
@@ -118,6 +119,14 @@ impl PyOrchestrator {
             estimated_latency_ms: plan.estimated_latency_ms,
             local_first: plan.local_first,
         })
+    }
+
+    pub fn provider_ranking(&self) -> PyResult<Vec<(String, f32)>> {
+        let orchestrator = self.inner.lock().map_err(|_| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Failed to acquire orchestrator lock")
+        })?;
+
+        Ok(orchestrator.provider_ranking())
     }
 }
 

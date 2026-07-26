@@ -1,9 +1,9 @@
+use crate::optimizer::{BudgetConfig, BudgetEnforcer, DynamicRouter};
 use crate::types::CloudProvider;
-use crate::optimizer::{BudgetEnforcer, BudgetConfig, DynamicRouter};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::Semaphore;
-use std::sync::Arc;
 
 /// Configuration for real provider load testing
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -161,7 +161,10 @@ impl ProviderLoadTester {
         let (min_latency, max_latency) = if latencies.is_empty() {
             (0, 0)
         } else {
-            (*latencies.iter().min().unwrap(), *latencies.iter().max().unwrap())
+            (
+                *latencies.iter().min().unwrap(),
+                *latencies.iter().max().unwrap(),
+            )
         };
 
         let p50 = Self::calculate_percentile(&latencies, 0.50);

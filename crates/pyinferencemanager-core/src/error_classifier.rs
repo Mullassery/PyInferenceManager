@@ -56,7 +56,8 @@ impl ErrorClassifier {
             || lower.contains("try again")
             || lower.contains("connection reset")
             || lower.contains("connection refused")
-            || lower.contains("temporarily") {
+            || lower.contains("temporarily")
+        {
             return ErrorCategory::Retryable;
         }
 
@@ -67,7 +68,8 @@ impl ErrorClassifier {
             || lower.contains("permission denied")
             || lower.contains("not found")
             || lower.contains("invalid request")
-            || lower.contains("bad request") {
+            || lower.contains("bad request")
+        {
             return ErrorCategory::NonRetryable;
         }
 
@@ -122,21 +124,54 @@ mod tests {
 
     #[test]
     fn test_classify_http_status_retryable() {
-        assert_eq!(ErrorClassifier::classify_http_status(429), ErrorCategory::Retryable);
-        assert_eq!(ErrorClassifier::classify_http_status(408), ErrorCategory::Retryable);
-        assert_eq!(ErrorClassifier::classify_http_status(500), ErrorCategory::Retryable);
-        assert_eq!(ErrorClassifier::classify_http_status(502), ErrorCategory::Retryable);
-        assert_eq!(ErrorClassifier::classify_http_status(503), ErrorCategory::Retryable);
-        assert_eq!(ErrorClassifier::classify_http_status(504), ErrorCategory::Retryable);
+        assert_eq!(
+            ErrorClassifier::classify_http_status(429),
+            ErrorCategory::Retryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(408),
+            ErrorCategory::Retryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(500),
+            ErrorCategory::Retryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(502),
+            ErrorCategory::Retryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(503),
+            ErrorCategory::Retryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(504),
+            ErrorCategory::Retryable
+        );
     }
 
     #[test]
     fn test_classify_http_status_non_retryable() {
-        assert_eq!(ErrorClassifier::classify_http_status(401), ErrorCategory::NonRetryable);
-        assert_eq!(ErrorClassifier::classify_http_status(403), ErrorCategory::NonRetryable);
-        assert_eq!(ErrorClassifier::classify_http_status(404), ErrorCategory::NonRetryable);
-        assert_eq!(ErrorClassifier::classify_http_status(400), ErrorCategory::NonRetryable);
-        assert_eq!(ErrorClassifier::classify_http_status(409), ErrorCategory::NonRetryable);
+        assert_eq!(
+            ErrorClassifier::classify_http_status(401),
+            ErrorCategory::NonRetryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(403),
+            ErrorCategory::NonRetryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(404),
+            ErrorCategory::NonRetryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(400),
+            ErrorCategory::NonRetryable
+        );
+        assert_eq!(
+            ErrorClassifier::classify_http_status(409),
+            ErrorCategory::NonRetryable
+        );
     }
 
     #[test]
@@ -205,14 +240,20 @@ mod tests {
     #[test]
     fn test_is_retryable() {
         assert!(ErrorClassifier::is_retryable(Some(429), "Rate limit"));
-        assert!(ErrorClassifier::is_retryable(Some(503), "Service unavailable"));
+        assert!(ErrorClassifier::is_retryable(
+            Some(503),
+            "Service unavailable"
+        ));
         assert!(!ErrorClassifier::is_retryable(Some(401), "Unauthorized"));
         assert!(!ErrorClassifier::is_retryable(Some(404), "Not found"));
     }
 
     #[test]
     fn test_extract_status_code() {
-        assert_eq!(ErrorClassifier::extract_status_code("HTTP 429: Too Many Requests"), Some(429));
+        assert_eq!(
+            ErrorClassifier::extract_status_code("HTTP 429: Too Many Requests"),
+            Some(429)
+        );
         assert_eq!(
             ErrorClassifier::extract_status_code("Status: 503 Service Unavailable"),
             Some(503)
@@ -221,6 +262,9 @@ mod tests {
             ErrorClassifier::extract_status_code("Error Code: 401 Unauthorized"),
             Some(401)
         );
-        assert_eq!(ErrorClassifier::extract_status_code("Some error without status"), None);
+        assert_eq!(
+            ErrorClassifier::extract_status_code("Some error without status"),
+            None
+        );
     }
 }

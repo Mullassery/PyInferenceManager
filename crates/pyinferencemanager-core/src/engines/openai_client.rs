@@ -34,7 +34,11 @@ impl OpenAIClient {
         self.complete_via_http(prompt, max_tokens).await
     }
 
-    async fn complete_via_http(&self, prompt: &str, max_tokens: u32) -> crate::Result<OpenAIResponse> {
+    async fn complete_via_http(
+        &self,
+        prompt: &str,
+        max_tokens: u32,
+    ) -> crate::Result<OpenAIResponse> {
         let url = "https://api.openai.com/v1/chat/completions";
 
         let request_body = serde_json::json!({

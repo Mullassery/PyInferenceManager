@@ -48,11 +48,7 @@ impl ExecutionRouter {
         }
     }
 
-    fn route_local_first(
-        &self,
-        complexity: f32,
-        hardware: &HardwareProfile,
-    ) -> ExecutionEngine {
+    fn route_local_first(&self, complexity: f32, hardware: &HardwareProfile) -> ExecutionEngine {
         if complexity > self.complexity_cloud_threshold {
             return ExecutionEngine::CloudLlm {
                 provider: CloudProvider::Anthropic {
@@ -74,11 +70,7 @@ impl ExecutionRouter {
         }
     }
 
-    fn route_cloud_first(
-        &self,
-        complexity: f32,
-        hardware: &HardwareProfile,
-    ) -> ExecutionEngine {
+    fn route_cloud_first(&self, complexity: f32, hardware: &HardwareProfile) -> ExecutionEngine {
         if complexity < self.complexity_local_threshold {
             if let Some(model) = &hardware.best_available_model {
                 return ExecutionEngine::LocalLlm {
@@ -132,8 +124,7 @@ mod tests {
 
     #[test]
     fn test_router_with_thresholds() {
-        let router = ExecutionRouter::new(ExecutionMode::LocalFirst)
-            .with_thresholds(0.6, 0.2);
+        let router = ExecutionRouter::new(ExecutionMode::LocalFirst).with_thresholds(0.6, 0.2);
 
         assert_eq!(router.complexity_cloud_threshold, 0.6);
         assert_eq!(router.complexity_local_threshold, 0.2);
@@ -181,14 +172,12 @@ mod tests {
 
         let engine = router.select_engine(0.8, &PrivacyLevel::Low, false, &hardware);
         match engine {
-            ExecutionEngine::CloudLlm { provider } => {
-                match provider {
-                    CloudProvider::Anthropic { model } => {
-                        assert_eq!(model, "claude-haiku-4-5");
-                    }
-                    _ => panic!("Expected Anthropic provider"),
+            ExecutionEngine::CloudLlm { provider } => match provider {
+                CloudProvider::Anthropic { model } => {
+                    assert_eq!(model, "claude-haiku-4-5");
                 }
-            }
+                _ => panic!("Expected Anthropic provider"),
+            },
             _ => panic!("Expected CloudLlm for high complexity"),
         }
     }

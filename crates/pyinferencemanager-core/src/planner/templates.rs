@@ -60,8 +60,7 @@ impl DagTemplate {
                         },
                     )
                     .with_template(
-                        "Synthesize the document analysis into a concise summary."
-                            .to_string(),
+                        "Synthesize the document analysis into a concise summary.".to_string(),
                     )
                     .with_cacheable(true)
                     .with_complexity(0.6)
@@ -86,8 +85,9 @@ impl DagTemplate {
                             model: "llama3.2:latest".to_string(),
                         },
                     )
-                    .with_template("Answer the user's question based on the provided context."
-                        .to_string())
+                    .with_template(
+                        "Answer the user's question based on the provided context.".to_string(),
+                    )
                     .with_cacheable(true)
                     .with_complexity(0.5)
                     .with_depends_on(vec![0]),
@@ -152,10 +152,7 @@ mod tests {
 
     #[test]
     fn test_template_equality() {
-        assert_eq!(
-            DagTemplate::DocumentAnalysis,
-            DagTemplate::DocumentAnalysis
-        );
+        assert_eq!(DagTemplate::DocumentAnalysis, DagTemplate::DocumentAnalysis);
         assert_ne!(
             DagTemplate::DocumentAnalysis,
             DagTemplate::QuestionAnswering

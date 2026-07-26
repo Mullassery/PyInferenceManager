@@ -1,10 +1,10 @@
-pub mod prometheus_exporter;
 pub mod jaeger_exporter;
 pub mod logging_exporter;
+pub mod prometheus_exporter;
 
-pub use prometheus_exporter::PrometheusExporter;
 pub use jaeger_exporter::JaegerExporter;
 pub use logging_exporter::LoggingExporter;
+pub use prometheus_exporter::PrometheusExporter;
 
 use serde::{Deserialize, Serialize};
 

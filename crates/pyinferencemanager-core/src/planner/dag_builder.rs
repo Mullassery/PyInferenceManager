@@ -1,7 +1,7 @@
+use super::templates::DagTemplate;
 use crate::analyzer::{ComplexityScorer, TaskClassifier};
 use crate::types::{Dag, DagNode, ExecutionEngine, Task};
 use crate::Result;
-use super::templates::DagTemplate;
 
 #[derive(Debug, Clone, Copy)]
 pub struct DagBuilder;
@@ -13,11 +13,7 @@ impl DagBuilder {
 
     pub fn build(task: &Task) -> Result<Dag> {
         let task_kind = TaskClassifier::classify(&task.description);
-        let attachment_size = task
-            .attachments
-            .iter()
-            .map(|a| a.content.len())
-            .sum();
+        let attachment_size = task.attachments.iter().map(|a| a.content.len()).sum();
         let complexity = ComplexityScorer::score(&task.description, attachment_size);
 
         let template = Self::select_template(&task_kind, complexity);

@@ -15,7 +15,10 @@ impl BackoffStrategy {
                 let delay = (*initial_ms as u64) * 2_u64.pow(attempt);
                 (*max_ms).min(delay)
             }
-            BackoffStrategy::Linear { increment_ms, max_ms } => {
+            BackoffStrategy::Linear {
+                increment_ms,
+                max_ms,
+            } => {
                 let delay = (*increment_ms as u64) * (attempt as u64 + 1);
                 (*max_ms).min(delay)
             }
@@ -199,11 +202,10 @@ mod tests {
 
     #[test]
     fn test_retry_state_backoff_progression() {
-        let config = RetryConfig::new(4)
-            .with_backoff(BackoffStrategy::Exponential {
-                initial_ms: 100,
-                max_ms: 1000,
-            });
+        let config = RetryConfig::new(4).with_backoff(BackoffStrategy::Exponential {
+            initial_ms: 100,
+            max_ms: 1000,
+        });
 
         let mut state = RetryState::new(config);
 

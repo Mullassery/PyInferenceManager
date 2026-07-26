@@ -78,5 +78,5 @@ ARFLAGS_aarch64_apple_darwin = None
 cargo:rerun-if-env-changed=ARFLAGS_aarch64-apple-darwin
 ARFLAGS_aarch64-apple-darwin = None
 cargo:rustc-link-lib=static=sqlite3
-cargo:rustc-link-search=native=/Users/georgimullassery/pyinferencemanager/target/debug/build/libsqlite3-sys-67b89d82c6e3fa62/out
-cargo:lib_dir=/Users/georgimullassery/pyinferencemanager/target/debug/build/libsqlite3-sys-67b89d82c6e3fa62/out
+cargo:rustc-link-search=native=/Users/georgimullassery/Documents/SourceCode/PyInferenceManager/target/debug/build/libsqlite3-sys-67b89d82c6e3fa62/out
+cargo:lib_dir=/Users/georgimullassery/Documents/SourceCode/PyInferenceManager/target/debug/build/libsqlite3-sys-67b89d82c6e3fa62/out

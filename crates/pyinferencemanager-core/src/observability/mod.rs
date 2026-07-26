@@ -1,11 +1,11 @@
-pub mod tracer;
-pub mod metrics;
-pub mod logging;
 pub mod exporters;
+pub mod logging;
+pub mod metrics;
+pub mod tracer;
 
-pub use tracer::TraceContext;
-pub use metrics::MetricsCollector;
 pub use logging::StructuredLogger;
+pub use metrics::MetricsCollector;
+pub use tracer::TraceContext;
 
 use opentelemetry::global::ObjectSafeSpan;
 use std::sync::Arc;

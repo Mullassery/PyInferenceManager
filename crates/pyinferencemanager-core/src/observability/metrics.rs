@@ -177,7 +177,10 @@ mod tests {
     fn test_metric_with_label() {
         let metric = Metric::new("test".to_string(), 1.0)
             .with_label("provider".to_string(), "anthropic".to_string());
-        assert_eq!(metric.labels.get("provider"), Some(&"anthropic".to_string()));
+        assert_eq!(
+            metric.labels.get("provider"),
+            Some(&"anthropic".to_string())
+        );
     }
 
     #[test]

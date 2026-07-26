@@ -1,5 +1,5 @@
-use crate::types::CloudProvider;
 use crate::optimizer::{BudgetConfig, BudgetEnforcer, DynamicRouter, ProviderPerformance};
+use crate::types::CloudProvider;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -121,8 +121,12 @@ impl RealLoadTester {
             match self.budget_enforcer.record_cost(simulated_cost) {
                 Ok(_) => {
                     // Update dynamic router with performance metrics
-                    self.dynamic_router
-                        .update_performance(&selected_provider, simulated_success, simulated_latency, simulated_cost);
+                    self.dynamic_router.update_performance(
+                        &selected_provider,
+                        simulated_success,
+                        simulated_latency,
+                        simulated_cost,
+                    );
 
                     if simulated_success {
                         successful += 1;
@@ -147,7 +151,10 @@ impl RealLoadTester {
         let (min_latency, max_latency) = if latencies.is_empty() {
             (0, 0)
         } else {
-            (*latencies.iter().min().unwrap(), *latencies.iter().max().unwrap())
+            (
+                *latencies.iter().min().unwrap(),
+                *latencies.iter().max().unwrap(),
+            )
         };
 
         // Calculate percentiles
@@ -215,7 +222,8 @@ fn rand_u64(min: u64, max: u64) -> u64 {
     min + (std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .subsec_nanos() as u64 % (max - min))
+        .subsec_nanos() as u64
+        % (max - min))
 }
 
 fn rand_f32(min: f32, max: f32) -> f32 {

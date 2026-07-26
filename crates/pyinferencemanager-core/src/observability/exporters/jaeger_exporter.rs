@@ -77,10 +77,7 @@ mod tests {
     #[test]
     fn test_jaeger_exporter_new() {
         let exporter = JaegerExporter::new("http://localhost:14268/api/traces".to_string());
-        assert_eq!(
-            exporter.endpoint,
-            "http://localhost:14268/api/traces"
-        );
+        assert_eq!(exporter.endpoint, "http://localhost:14268/api/traces");
     }
 
     #[test]

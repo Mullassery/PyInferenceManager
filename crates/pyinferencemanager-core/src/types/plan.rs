@@ -44,11 +44,7 @@ impl ExecutionPlan {
         }
     }
 
-    pub fn with_cost_and_latency(
-        mut self,
-        cost: f32,
-        latency_ms: u64,
-    ) -> Self {
+    pub fn with_cost_and_latency(mut self, cost: f32, latency_ms: u64) -> Self {
         self.estimated_cost_usd = cost;
         self.estimated_latency_ms = latency_ms;
         self
@@ -146,7 +142,11 @@ mod tests {
     #[test]
     fn test_execution_plan_new() {
         let mut dag = Dag::new("task1".to_string());
-        dag.add_node(DagNode::new(0, "node0".to_string(), ExecutionEngine::CacheLookup));
+        dag.add_node(DagNode::new(
+            0,
+            "node0".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
 
         let plan = ExecutionPlan::new("task1".to_string(), dag);
         assert_eq!(plan.task_id, "task1");
@@ -156,7 +156,11 @@ mod tests {
     #[test]
     fn test_execution_plan_builders() {
         let mut dag = Dag::new("task1".to_string());
-        dag.add_node(DagNode::new(0, "node0".to_string(), ExecutionEngine::CacheLookup));
+        dag.add_node(DagNode::new(
+            0,
+            "node0".to_string(),
+            ExecutionEngine::CacheLookup,
+        ));
 
         let plan = ExecutionPlan::new("task1".to_string(), dag)
             .with_cost_and_latency(0.05, 1000)

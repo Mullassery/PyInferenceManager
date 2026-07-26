@@ -5,7 +5,10 @@ use crate::Result;
 pub struct OllamaProbe;
 
 impl OllamaProbe {
-    pub async fn probe_models(base_url: &str, recommended_tier: &ModelTier) -> Result<(Vec<String>, Option<String>, Option<String>)> {
+    pub async fn probe_models(
+        base_url: &str,
+        recommended_tier: &ModelTier,
+    ) -> Result<(Vec<String>, Option<String>, Option<String>)> {
         let client = OllamaClient::new(base_url);
 
         if !client.is_available().await {
@@ -28,9 +31,7 @@ impl OllamaProbe {
             .iter()
             .find(|m| m.contains(tier_pattern) || Self::model_matches_tier(m, tier))
             .cloned()
-            .or_else(|| {
-                models.first().cloned()
-            })
+            .or_else(|| models.first().cloned())
     }
 
     fn find_embedding_model(models: &[String]) -> Option<String> {
@@ -98,14 +99,23 @@ mod tests {
 
     #[test]
     fn test_model_matches_tier_tiny() {
-        assert!(OllamaProbe::model_matches_tier("qwen2.5:1.5b", &ModelTier::Tiny));
+        assert!(OllamaProbe::model_matches_tier(
+            "qwen2.5:1.5b",
+            &ModelTier::Tiny
+        ));
         assert!(OllamaProbe::model_matches_tier("phi3:3b", &ModelTier::Tiny));
     }
 
     #[test]
     fn test_model_matches_tier_large() {
-        assert!(OllamaProbe::model_matches_tier("qwen2.5:32b", &ModelTier::Large));
-        assert!(OllamaProbe::model_matches_tier("llama2:32b", &ModelTier::Large));
+        assert!(OllamaProbe::model_matches_tier(
+            "qwen2.5:32b",
+            &ModelTier::Large
+        ));
+        assert!(OllamaProbe::model_matches_tier(
+            "llama2:32b",
+            &ModelTier::Large
+        ));
     }
 
     #[test]

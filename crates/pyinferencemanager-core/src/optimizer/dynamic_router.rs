@@ -5,10 +5,10 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderPerformance {
     pub provider_name: String,
-    pub success_rate: f32,        // 0.0-1.0
+    pub success_rate: f32, // 0.0-1.0
     pub avg_latency_ms: u64,
     pub cost_per_1k_tokens: f32,
-    pub health_score: f32,        // 0.0-1.0: combines success rate and latency
+    pub health_score: f32, // 0.0-1.0: combines success rate and latency
     pub request_count: u64,
     pub total_cost_usd: f32,
 }
@@ -113,9 +113,7 @@ impl DynamicRouter {
 
         // For high complexity, prefer most reliable providers
         if complexity > self.complexity_threshold {
-            return candidates
-                .first()
-                .map(|(name, _)| name.to_string());
+            return candidates.first().map(|(name, _)| name.to_string());
         }
 
         // For low complexity, prefer lowest cost providers
@@ -135,10 +133,7 @@ impl DynamicRouter {
             .map(|(name, perf)| (name.clone(), perf.health_score))
             .collect();
 
-        ranking.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        ranking.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         ranking
     }

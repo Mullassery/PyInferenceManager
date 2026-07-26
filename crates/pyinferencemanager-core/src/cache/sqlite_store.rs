@@ -1,6 +1,6 @@
-use rusqlite::{Connection, params, OptionalExtension};
 use crate::types::CacheEntry;
 use crate::Result;
+use rusqlite::{params, Connection, OptionalExtension};
 use std::sync::Mutex;
 
 pub struct SqliteCacheStore {
@@ -29,9 +29,10 @@ impl SqliteCacheStore {
     }
 
     fn init_schema(&self) -> Result<()> {
-        let conn = self.conn.lock().map_err(|_| {
-            crate::Error::CacheError("Failed to acquire lock".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| crate::Error::CacheError("Failed to acquire lock".to_string()))?;
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS cache_entries (
@@ -46,25 +47,29 @@ impl SqliteCacheStore {
                 freshness_score REAL DEFAULT 1.0
             )",
             [],
-        ).map_err(|e| crate::Error::CacheError(format!("Schema creation failed: {}", e)))?;
+        )
+        .map_err(|e| crate::Error::CacheError(format!("Schema creation failed: {}", e)))?;
 
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_key_hash ON cache_entries(key_hash)",
             [],
-        ).map_err(|e| crate::Error::CacheError(format!("Index creation failed: {}", e)))?;
+        )
+        .map_err(|e| crate::Error::CacheError(format!("Index creation failed: {}", e)))?;
 
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_expires_at ON cache_entries(expires_at)",
             [],
-        ).map_err(|e| crate::Error::CacheError(format!("Index creation failed: {}", e)))?;
+        )
+        .map_err(|e| crate::Error::CacheError(format!("Index creation failed: {}", e)))?;
 
         Ok(())
     }
 
     pub fn store(&self, entry: &CacheEntry) -> Result<()> {
-        let conn = self.conn.lock().map_err(|_| {
-            crate::Error::CacheError("Failed to acquire lock".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| crate::Error::CacheError("Failed to acquire lock".to_string()))?;
 
         conn.execute(
             "INSERT OR REPLACE INTO cache_entries
@@ -87,9 +92,10 @@ impl SqliteCacheStore {
     }
 
     pub fn lookup(&self, key_hash: &str, task_kind: &str) -> Result<Option<CacheEntry>> {
-        let conn = self.conn.lock().map_err(|_| {
-            crate::Error::CacheError("Failed to acquire lock".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| crate::Error::CacheError("Failed to acquire lock".to_string()))?;
 
         let mut stmt = conn
             .prepare(
@@ -128,21 +134,26 @@ impl SqliteCacheStore {
     }
 
     pub fn evict_expired(&self) -> Result<u64> {
-        let conn = self.conn.lock().map_err(|_| {
-            crate::Error::CacheError("Failed to acquire lock".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| crate::Error::CacheError("Failed to acquire lock".to_string()))?;
 
         let rows_deleted = conn
-            .execute("DELETE FROM cache_entries WHERE expires_at < datetime('now')", [])
+            .execute(
+                "DELETE FROM cache_entries WHERE expires_at < datetime('now')",
+                [],
+            )
             .map_err(|e| crate::Error::CacheError(format!("Eviction failed: {}", e)))?;
 
         Ok(rows_deleted as u64)
     }
 
     pub fn clear(&self) -> Result<()> {
-        let conn = self.conn.lock().map_err(|_| {
-            crate::Error::CacheError("Failed to acquire lock".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| crate::Error::CacheError("Failed to acquire lock".to_string()))?;
 
         conn.execute("DELETE FROM cache_entries", [])
             .map_err(|e| crate::Error::CacheError(format!("Clear failed: {}", e)))?;
@@ -151,24 +162,29 @@ impl SqliteCacheStore {
     }
 
     pub fn stats(&self) -> Result<CacheStats> {
-        let conn = self.conn.lock().map_err(|_| {
-            crate::Error::CacheError("Failed to acquire lock".to_string())
-        })?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| crate::Error::CacheError("Failed to acquire lock".to_string()))?;
 
         let entry_count: i64 = conn
             .query_row("SELECT COUNT(*) FROM cache_entries", [], |row| row.get(0))
             .map_err(|e| crate::Error::CacheError(format!("Count query failed: {}", e)))?;
 
         let total_hit_count: i64 = conn
-            .query_row("SELECT COALESCE(SUM(hit_count), 0) FROM cache_entries", [], |row| {
-                row.get(0)
-            })
+            .query_row(
+                "SELECT COALESCE(SUM(hit_count), 0) FROM cache_entries",
+                [],
+                |row| row.get(0),
+            )
             .map_err(|e| crate::Error::CacheError(format!("Hit count query failed: {}", e)))?;
 
         let total_tokens_saved: i64 = conn
-            .query_row("SELECT COALESCE(SUM(tokens_saved), 0) FROM cache_entries", [], |row| {
-                row.get(0)
-            })
+            .query_row(
+                "SELECT COALESCE(SUM(tokens_saved), 0) FROM cache_entries",
+                [],
+                |row| row.get(0),
+            )
             .map_err(|e| crate::Error::CacheError(format!("Tokens saved query failed: {}", e)))?;
 
         Ok(CacheStats {

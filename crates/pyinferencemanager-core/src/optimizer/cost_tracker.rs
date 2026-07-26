@@ -156,7 +156,12 @@ mod tests {
         let mut tracker = CostTracker::new();
 
         tracker.record(ExecutionRecord::new("local_llm".to_string(), 100, 500, 0.0));
-        tracker.record(ExecutionRecord::new("cloud_llm".to_string(), 50, 1000, 0.01));
+        tracker.record(ExecutionRecord::new(
+            "cloud_llm".to_string(),
+            50,
+            1000,
+            0.01,
+        ));
         tracker.record(ExecutionRecord::new("local_llm".to_string(), 80, 400, 0.0));
 
         assert_eq!(tracker.invocation_count(), 3);
@@ -181,7 +186,12 @@ mod tests {
     fn test_cost_per_1k_tokens() {
         let mut tracker = CostTracker::new();
 
-        tracker.record(ExecutionRecord::new("cloud_llm".to_string(), 1000, 1000, 0.25));
+        tracker.record(ExecutionRecord::new(
+            "cloud_llm".to_string(),
+            1000,
+            1000,
+            0.25,
+        ));
 
         let cost_per_k = tracker.cost_per_1k_tokens("cloud_llm");
         assert!(cost_per_k.is_some());

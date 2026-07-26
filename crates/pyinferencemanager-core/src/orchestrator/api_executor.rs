@@ -1,10 +1,10 @@
-use crate::types::CloudProvider;
 use crate::error_classifier::ErrorClassifier;
+use crate::types::CloudProvider;
 use crate::Result;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 /// Enhanced API executor with timeout and rate limit handling
 #[derive(Debug, Clone)]
@@ -121,9 +121,7 @@ impl ApiExecutor {
                 }
                 Ok(Err(error)) => {
                     // Check if error is retryable
-                    if retries_used < self.max_retries
-                        && self.is_error_retryable(&error)
-                    {
+                    if retries_used < self.max_retries && self.is_error_retryable(&error) {
                         retries_used += 1;
                         // Exponential backoff
                         let backoff_ms = 100 * (2_u64.pow(retries_used - 1));
@@ -165,21 +163,14 @@ impl ApiExecutor {
         }
     }
 
-    async fn execute_internal(
-        &self,
-        request: &ApiExecutionRequest,
-    ) -> Result<(String, u32)> {
+    async fn execute_internal(&self, request: &ApiExecutionRequest) -> Result<(String, u32)> {
         // This will be implemented to call real provider APIs
         // For now, simulate execution
         let api_key = match &request.provider {
-            CloudProvider::Anthropic { model } => {
-                std::env::var("ANTHROPIC_API_KEY")
-                    .map_err(|_| crate::Error::CloudError("ANTHROPIC_API_KEY not set".to_string()))?
-            }
-            CloudProvider::OpenAI { model } => {
-                std::env::var("OPENAI_API_KEY")
-                    .map_err(|_| crate::Error::CloudError("OPENAI_API_KEY not set".to_string()))?
-            }
+            CloudProvider::Anthropic { model } => std::env::var("ANTHROPIC_API_KEY")
+                .map_err(|_| crate::Error::CloudError("ANTHROPIC_API_KEY not set".to_string()))?,
+            CloudProvider::OpenAI { model } => std::env::var("OPENAI_API_KEY")
+                .map_err(|_| crate::Error::CloudError("OPENAI_API_KEY not set".to_string()))?,
         };
 
         // Simulate API call

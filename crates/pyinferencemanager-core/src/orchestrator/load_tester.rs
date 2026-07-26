@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone)]
@@ -196,7 +196,9 @@ mod tests {
         let result = LoadTester::simulate_load_test(config);
 
         assert_eq!(result.total_requests, 100);
-        assert!(result.successful_requests + result.failed_requests + result.timed_out_requests >= 100);
+        assert!(
+            result.successful_requests + result.failed_requests + result.timed_out_requests >= 100
+        );
         assert!(result.avg_latency_ms > 0);
         assert!(result.success_rate >= 0.0 && result.success_rate <= 1.0);
         // RPS may be very high due to instant execution in test

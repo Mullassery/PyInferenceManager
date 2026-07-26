@@ -11,16 +11,17 @@ impl PrometheusExporter {
         Self { endpoint }
     }
 
-    pub fn export_collector(&self, collector: &MetricsCollector) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn export_collector(
+        &self,
+        collector: &MetricsCollector,
+    ) -> Result<String, Box<dyn std::error::Error>> {
         let mut output = String::new();
 
         // Request latency metrics
         output.push_str(&format!(
             "# HELP request_count_total Total number of requests\n"
         ));
-        output.push_str(&format!(
-            "# TYPE request_count_total counter\n"
-        ));
+        output.push_str(&format!("# TYPE request_count_total counter\n"));
         output.push_str(&format!(
             "request_count_total {}\n",
             collector.get_request_count()
@@ -30,9 +31,7 @@ impl PrometheusExporter {
         output.push_str(&format!(
             "# HELP error_count_total Total number of errors\n"
         ));
-        output.push_str(&format!(
-            "# TYPE error_count_total counter\n"
-        ));
+        output.push_str(&format!("# TYPE error_count_total counter\n"));
         output.push_str(&format!(
             "error_count_total {}\n",
             collector.get_error_count()
@@ -42,9 +41,7 @@ impl PrometheusExporter {
         output.push_str(&format!(
             "# HELP request_latency_ms Request latency in milliseconds\n"
         ));
-        output.push_str(&format!(
-            "# TYPE request_latency_ms gauge\n"
-        ));
+        output.push_str(&format!("# TYPE request_latency_ms gauge\n"));
         output.push_str(&format!(
             "request_latency_ms{{quantile=\"avg\"}} {}\n",
             collector.get_average_latency()
@@ -59,47 +56,30 @@ impl PrometheusExporter {
         ));
 
         // Cache metrics
-        output.push_str(&format!(
-            "# HELP cache_hits_total Total cache hits\n"
-        ));
-        output.push_str(&format!(
-            "# TYPE cache_hits_total counter\n"
-        ));
+        output.push_str(&format!("# HELP cache_hits_total Total cache hits\n"));
+        output.push_str(&format!("# TYPE cache_hits_total counter\n"));
         output.push_str(&format!(
             "cache_hits_total {}\n",
             collector.get_cache_hits()
         ));
 
-        output.push_str(&format!(
-            "# HELP cache_misses_total Total cache misses\n"
-        ));
-        output.push_str(&format!(
-            "# TYPE cache_misses_total counter\n"
-        ));
+        output.push_str(&format!("# HELP cache_misses_total Total cache misses\n"));
+        output.push_str(&format!("# TYPE cache_misses_total counter\n"));
         output.push_str(&format!(
             "cache_misses_total {}\n",
             collector.get_cache_misses()
         ));
 
         // Cost metrics
-        output.push_str(&format!(
-            "# HELP total_cost_usd Total cost in USD\n"
-        ));
-        output.push_str(&format!(
-            "# TYPE total_cost_usd gauge\n"
-        ));
-        output.push_str(&format!(
-            "total_cost_usd {}\n",
-            collector.get_total_cost()
-        ));
+        output.push_str(&format!("# HELP total_cost_usd Total cost in USD\n"));
+        output.push_str(&format!("# TYPE total_cost_usd gauge\n"));
+        output.push_str(&format!("total_cost_usd {}\n", collector.get_total_cost()));
 
         // Success rate
         output.push_str(&format!(
             "# HELP success_rate_percent Success rate percentage\n"
         ));
-        output.push_str(&format!(
-            "# TYPE success_rate_percent gauge\n"
-        ));
+        output.push_str(&format!("# TYPE success_rate_percent gauge\n"));
         output.push_str(&format!(
             "success_rate_percent {}\n",
             collector.get_success_rate()

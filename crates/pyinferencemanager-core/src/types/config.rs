@@ -63,7 +63,7 @@ pub struct CloudModelEntry {
     pub cost_per_1k_input: f32,
     pub cost_per_1k_output: f32,
     pub context_length: u32,
-    pub priority: u32,  // 1=highest (primary), 10=lowest (fallback)
+    pub priority: u32, // 1=highest (primary), 10=lowest (fallback)
 }
 
 impl CloudModelEntry {
@@ -227,11 +227,7 @@ mod tests {
 
     #[test]
     fn test_local_model_entry_new() {
-        let entry = LocalModelEntry::new(
-            "llama3.2:latest".to_string(),
-            ModelTier::Small,
-            4096,
-        );
+        let entry = LocalModelEntry::new("llama3.2:latest".to_string(), ModelTier::Small, 4096);
         assert_eq!(entry.name, "llama3.2:latest");
         assert_eq!(entry.tier, ModelTier::Small);
         assert!(!entry.is_embedding_model);
@@ -239,12 +235,8 @@ mod tests {
 
     #[test]
     fn test_local_model_entry_with_embedding() {
-        let entry = LocalModelEntry::new(
-            "nomic-embed-text".to_string(),
-            ModelTier::Tiny,
-            512,
-        )
-        .with_embedding(true);
+        let entry = LocalModelEntry::new("nomic-embed-text".to_string(), ModelTier::Tiny, 512)
+            .with_embedding(true);
 
         assert!(entry.is_embedding_model);
     }
