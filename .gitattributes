@@ -1,19 +1,46 @@
-# Mark Rust/C code as vendored (don't count toward language stats)
+# Mark all non-Python code as vendored or generated
+# This ensures Python is detected as the primary language
+
+# Rust/C/C++ implementation code
 crates/** linguist-vendored=true
-*.rs linguist-vendored=true
+src/rust/** linguist-vendored=true
 src/c/** linguist-vendored=true
 src/cpp/** linguist-vendored=true
+*.rs linguist-vendored=true
+*.c linguist-vendored=true
+*.h linguist-vendored=true
+*.cpp linguist-vendored=true
+*.cc linguist-vendored=true
+*.cxx linguist-vendored=true
 
-# Mark build artifacts as generated
+# Pawn and other languages
+*.pwn linguist-vendored=true
+*.pawn linguist-vendored=true
+
+# Build files and makefiles
+Makefile linguist-vendored=true
+makefile linguist-vendored=true
+*.make linguist-vendored=true
+
+# Build artifacts
+build/** linguist-generated=true
+dist/** linguist-generated=true
+target/** linguist-generated=true
 *.so linguist-generated=true
 *.pyd linguist-generated=true
 *.dylib linguist-generated=true
 *.dll linguist-generated=true
-build/** linguist-generated=true
-dist/** linguist-generated=true
+*.a linguist-generated=true
+*.o linguist-generated=true
+*.so.* linguist-generated=true
 *.egg-info/** linguist-generated=true
+__pycache__/** linguist-generated=true
+
+# DTrace
+*.d linguist-vendored=true
 
 # Force Python as primary language
 *.py linguist-language=Python
 pyproject.toml linguist-language=Python
 setup.py linguist-language=Python
+*.pyi linguist-language=Python
