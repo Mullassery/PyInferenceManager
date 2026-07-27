@@ -1,0 +1,43 @@
+# Sensitive files and credentials
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.crt
+credentials.json
+secrets.json
+.credentials
+config.local.*
+.config.local
+oauth_tokens.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+.venv
+
+# Rust
+target/
+Cargo.lock
+
+# Temp files
+*.tmp
+*.log
+temp/
+tmp/
