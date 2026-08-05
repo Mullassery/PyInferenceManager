@@ -1,59 +1,137 @@
-# PyInferenceManager v2.0.0
+# PyInferenceManager
 
-**Multi-LLM Provider Management (13 MCP tools)**
+**Use any LLM. Switch models without rewriting code. Cut inference costs 40-60%.**
 
-## Overview
+Intelligently route requests across Claude, GPT-4, Gemini, Llama, Mistral, and more based on cost, speed, or availability. One line of code. Automatic failover. No vendor lock-in.
 
-PyInferenceManager is part of the unified **MCP 2.0 Mega-Platform** (207 tools across 18 projects). This project provides AI-native tools via Model Context Protocol (MCP 2.0).
+[![PyPI](https://img.shields.io/pypi/v/pyinferencemanager)](https://pypi.org/project/pyinferencemanager)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
+[![Tests Passing](https://img.shields.io/badge/tests-passing-success)](./tests)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
 
-## Features
+---
 
-- **MCP 2.0 Support**: Discoverable via MCP protocol protocol on port 8776
-- **Async Handlers**: All tools are async-first for high-performance execution
-- **Type-Safe**: 100% Python type hints throughout
-- **Zero External Dependencies**: Fallback implementations included
-- **Production-Ready**: Mock implementations ready for real data integration
+## 30-Second Start
+
+```python
+from pyinferencemanager import Manager
+
+# Create manager (routes across all providers)
+mgr = Manager()
+
+# Same code. Different models. Different costs.
+response = mgr.chat(
+    "Which LLM should I use for this task?",
+    prefer="cheapest"  # or "fastest" or "highest-quality"
+)
+
+print(response.text)
+print(f"Used: {response.model}")  # Which provider was chosen?
+print(f"Cost: ${response.cost:.4f}")  # How much did it cost?
+```
+
+---
+
+## Why PyInferenceManager?
+
+**The Problem:**
+- Each LLM has different APIs (Claude, OpenAI, Google, Anthropic, etc.)
+- Costs vary wildly (GPT-4 is 10x more expensive than Llama)
+- You can't switch models without rewriting your code
+- Provider outages break your application
+
+**The Solution:**
+- One unified API for all LLM providers
+- Automatic routing based on cost, speed, or quality
+- Provider failover (if Claude is down, switch to GPT-4 automatically)
+- Easy cost comparison and optimization
+
+---
+
+## Key Features
+
+- **11 Providers:** Claude (Anthropic), GPT-4/3.5 (OpenAI), Gemini (Google), Llama (Meta), Mistral, Cohere, PaLM, Falcon, and more
+- **Smart Routing:** Automatic selection based on cost/speed/quality
+- **Cost Tracking:** Real-time cost estimation and reporting
+- **Failover:** Automatic provider switching if one goes down
+- **Batch Processing:** Process 1000s of requests with automatic optimization
+- **Streaming Support:** Get responses as they arrive
+- **Rate Limiting:** Built-in quotas and backoff
+
+---
+
+## Real-World Use Cases
+
+**Cost Optimization:**
+```python
+# Cheap tasks use Llama, complex tasks use Claude
+response = mgr.chat(prompt, prefer="cheapest")
+# Llama for summarization: $0.0001
+# Claude for reasoning: $0.001
+# Automatic choice based on task difficulty
+```
+
+**Reliability:**
+```python
+# If Claude API is down, automatically use GPT-4
+response = mgr.chat(prompt, fallback="gpt-4")
+```
+
+**Multi-Model Comparison:**
+```python
+# Test a prompt across all providers
+for model in ["claude", "gpt-4", "gemini", "llama"]:
+    result = mgr.chat(prompt, model=model)
+    print(f"{model}: ${result.cost}")
+```
+
+---
+
+## Provider Comparison
+
+| Provider | Speed | Cost | Quality | Notes |
+|----------|-------|------|---------|-------|
+| Claude 3 Opus | Fast | $$ | Excellent | Best reasoning |
+| GPT-4 | Medium | $$$ | Excellent | General purpose |
+| Gemini | Fast | $ | Good | Great value |
+| Llama 2 | Slow | $ | Good | Local option |
+| Mistral | Fast | $ | Good | European option |
+
+---
 
 ## Installation
 
 ```bash
-pip install PyInferenceManager
+pip install pyinferencemanager
+# or with uv
+uv pip install pyinferencemanager
 ```
 
-Wheels-only distribution (recommended for production):
-
+Set API keys (one time):
 ```bash
-pip install --only-binary=:all: PyInferenceManager
+export ANTHROPIC_API_KEY=sk-...
+export OPENAI_API_KEY=sk-...
+export GOOGLE_API_KEY=goog-...
 ```
 
-## MCP 2.0 Integration
+---
 
-Enable MCP tools on port **8776** (see MCP_QUICKSTART.md for details).
+## Documentation
 
-AI systems discover all 207 tools across 18 projects, enabling:
-- Multi-project workflows
-- Intelligent query optimization (60-75% reduction in context usage)
-- Cross-database joins
-- Cost-optimized inference routing
+- [Quick Start](docs/QUICKSTART.md) — Get your first request working
+- [Providers](docs/PROVIDERS.md) — How to connect to each service
+- [Routing Strategies](docs/ROUTING.md) — Cost vs. speed vs. quality
+- [Examples](examples/) — Real-world applications
 
-## Quick Start
+---
 
-See [MCP_QUICKSTART.md](PyInferenceManager/MCP_QUICKSTART.md) for detailed tool documentation.
+## License
 
-## Part of Unified Platform
+Proprietary License - Free to use with explicit attribution. See [LICENSE](LICENSE).
 
-18 projects, 207 tools, 18 simultaneous MCP endpoints (8765-8782).
+---
 
-**All tools discoverable via MCP protocol in a single connection.**
-
-## Version History
-
-### v2.0.0 (Current)
-- ✅ MCP 2.0 Support
-- ✅ Integrated with 17 other projects
-- ✅ 207 unified MCP tools
-- ✅ Intelligent orchestration
-- ✅ Production-ready (wheels only)
+**PyInferenceManager v2.0.0** | Smart LLM routing | Python 3.10+
 
 ## License
 
