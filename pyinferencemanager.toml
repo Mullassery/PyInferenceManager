@@ -1,0 +1,22 @@
+[mcp]
+enabled = true
+port = 8776
+discovery_method = "stdio"
+
+[mcp.tools]
+list_available_models = true
+select_optimal_model = true
+execute_inference = true
+batch_inference = true
+fallback_routing = true
+get_model_metrics = true
+estimate_inference_cost = true
+count_tokens = true
+configure_rate_limits = true
+get_provider_status = true
+enable_caching = true
+get_context_window = true
+export_usage_report = true
+
+[mcp.security]
+require_auth = false

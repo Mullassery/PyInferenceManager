@@ -1,7 +1,124 @@
-use pyinferencemanager_core::{ExecutionMode, Orchestrator, OrchestratorConfig};
+use pyinferencemanager_core::{ExecutionMode, Orchestrator, OrchestratorConfig, backends::BackendKind};
 use pyo3::prelude::*;
 use std::sync::Arc;
 use std::sync::Mutex;
+
+// ============================================================================
+// BACKEND ENUM
+// ============================================================================
+
+#[pyclass]
+pub struct PyBackendKind {
+    inner: BackendKind,
+}
+
+#[pymethods]
+impl PyBackendKind {
+    #[staticmethod]
+    fn anthropic() -> Self {
+        PyBackendKind { inner: BackendKind::Anthropic }
+    }
+
+    #[staticmethod]
+    fn openai() -> Self {
+        PyBackendKind { inner: BackendKind::OpenAi }
+    }
+
+    #[staticmethod]
+    fn ollama() -> Self {
+        PyBackendKind { inner: BackendKind::Ollama }
+    }
+
+    #[staticmethod]
+    fn vllm() -> Self {
+        PyBackendKind { inner: BackendKind::VLlm }
+    }
+
+    #[staticmethod]
+    fn tensorrt_llm() -> Self {
+        PyBackendKind { inner: BackendKind::TensorRtLlm }
+    }
+
+    #[staticmethod]
+    fn mlc_llm() -> Self {
+        PyBackendKind { inner: BackendKind::MlcLlm }
+    }
+
+    #[staticmethod]
+    fn colibri() -> Self {
+        PyBackendKind { inner: BackendKind::Colibri }
+    }
+
+    fn as_str(&self) -> String {
+        self.inner.as_str().to_string()
+    }
+}
+
+// ============================================================================
+// HARDWARE PROFILE CLASS
+// ============================================================================
+
+#[pyclass]
+pub struct PyHardwareProfile {
+    total_memory_bytes: u64,
+    memory_tier: String,
+    recommended_model_tier: String,
+    is_apple_silicon: bool,
+    has_metal: bool,
+    available_ollama_models: Vec<String>,
+    best_available_model: Option<String>,
+}
+
+#[pymethods]
+impl PyHardwareProfile {
+    #[getter]
+    fn total_memory_gb(&self) -> u64 {
+        self.total_memory_bytes / 1_073_741_824
+    }
+
+    #[getter]
+    fn memory_tier(&self) -> String {
+        self.memory_tier.clone()
+    }
+
+    #[getter]
+    fn recommended_model_tier(&self) -> String {
+        self.recommended_model_tier.clone()
+    }
+
+    #[getter]
+    fn is_apple_silicon(&self) -> bool {
+        self.is_apple_silicon
+    }
+
+    #[getter]
+    fn has_metal(&self) -> bool {
+        self.has_metal
+    }
+
+    #[getter]
+    fn available_ollama_models(&self) -> Vec<String> {
+        self.available_ollama_models.clone()
+    }
+
+    #[getter]
+    fn best_available_model(&self) -> Option<String> {
+        self.best_available_model.clone()
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "HardwareProfile(memory={}GB, tier={}, model_tier={})",
+            self.total_memory_gb(),
+            self.memory_tier,
+            self.recommended_model_tier
+        )
+    }
+}
+
+// ============================================================================
+// ORCHESTRATOR CLASS (EXPANDED)
+// ============================================================================
 
 #[pyclass]
 pub struct PyOrchestrator {
@@ -128,6 +245,43 @@ impl PyOrchestrator {
 
         Ok(orchestrator.provider_ranking())
     }
+
+    pub fn profile_hardware(&self) -> PyResult<PyHardwareProfile> {
+        let orchestrator = self.inner.lock().map_err(|_| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Failed to acquire orchestrator lock")
+        })?;
+
+        let profile = self
+            .runtime
+            .block_on(orchestrator.profile_hardware())
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+
+        Ok(PyHardwareProfile {
+            total_memory_bytes: profile.total_memory_bytes,
+            memory_tier: profile.memory_tier.to_string(),
+            recommended_model_tier: profile.recommended_model_tier.to_string(),
+            is_apple_silicon: profile.is_apple_silicon,
+            has_metal: profile.has_metal,
+            available_ollama_models: profile.available_ollama_models.clone(),
+            best_available_model: profile.best_available_model.clone(),
+        })
+    }
+
+    pub fn available_backends(&self) -> PyResult<Vec<String>> {
+        Ok(vec![
+            "anthropic".to_string(),
+            "openai".to_string(),
+            "ollama".to_string(),
+            "vllm".to_string(),
+            "tensorrt_llm".to_string(),
+            "mlc_llm".to_string(),
+            "colibri".to_string(),
+        ])
+    }
+
+    pub fn __repr__(&self) -> String {
+        "Orchestrator(execution_mode=auto)".to_string()
+    }
 }
 
 #[pyclass]
@@ -213,8 +367,15 @@ impl PyExecutionPlan {
 #[pymodule]
 fn _core(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+
+    // Core classes
     m.add_class::<PyOrchestrator>()?;
     m.add_class::<PyWorkloadResult>()?;
     m.add_class::<PyExecutionPlan>()?;
+
+    // New infrastructure classes
+    m.add_class::<PyBackendKind>()?;
+    m.add_class::<PyHardwareProfile>()?;
+
     Ok(())
 }
