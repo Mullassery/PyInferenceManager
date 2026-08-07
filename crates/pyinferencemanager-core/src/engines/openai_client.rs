@@ -57,6 +57,12 @@ impl OpenAIClient {
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("content-type", "application/json")
             .json(&request_body)
+            // No timeout here would let a hung/unreachable OpenAI endpoint
+            // block forever instead of triggering this orchestrator's
+            // failover to another provider — defeating the whole point of
+            // "reliable multi-provider routing." (found via a test run that
+            // hung indefinitely on an equivalent missing timeout elsewhere.)
+            .timeout(std::time::Duration::from_secs(60))
             .send()
             .await
             .map_err(|e| crate::Error::CloudError(format!("HTTP request failed: {}", e)))?;

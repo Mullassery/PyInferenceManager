@@ -2,6 +2,46 @@
 
 All notable changes to PyInferenceManager are documented in this file.
 
+## [1.1.0] - 2026-08-07
+
+### Fixed
+- **Critical: budget enforcement deadlocked whenever it actually triggered.**
+  `BudgetEnforcer::record_cost()` held a lock on `current_cost` for its entire
+  body, then called `add_alert()` — which tried to acquire that same
+  (non-reentrant `parking_lot::Mutex`) lock again — while still holding it.
+  This meant the exact moment an alert threshold or the hard cost limit fired
+  (i.e. the one time budget enforcement is supposed to actually do something),
+  the call hung forever. Found via a test suite run that never completed.
+- **Dynamic routing ignored latency entirely.** `alpha as u64` / `(1.0 -
+  alpha) as u64` (`alpha = 0.1`) both truncate to `0` in Rust, so
+  `avg_latency_ms`'s exponential-moving-average update always computed to
+  `0 * latency_ms + 0 * old_value = 0` — meaning every provider's tracked
+  latency was permanently `0` regardless of what was actually recorded,
+  silently defeating the "dynamic routing based on real-time performance"
+  claim (latency is 30% of the health score used to pick a provider).
+- **No timeout on any outbound HTTP client** (Ollama, OpenAI, Anthropic/cloud).
+  `reqwest::Client::new()` has no default timeout; an unreachable or hung
+  provider endpoint — the exact scenario this orchestrator's failover exists
+  to handle — could block a request indefinitely instead of failing over.
+  Added a 3s connect timeout to the Ollama client (used in hardware probing,
+  where fast-fail matters most) and 60s request timeouts to the OpenAI and
+  Anthropic/cloud clients.
+- Corrected a test (`test_dynamic_router_select_provider_high_complexity`)
+  whose expected outcome didn't actually follow from the routing algorithm
+  it was testing (it conflated "more historical update() calls" with "higher
+  reliability," which isn't what the code measures) — rewritten with an
+  unambiguous success-rate gap between providers.
+
+### Added
+- CI (`.github/workflows/tests.yml`): builds and tests the full Rust
+  workspace, plus a maturin build + import smoke-test of the Python
+  extension. Did not exist before this release.
+- Regression tests for both deadlock and latency-truncation bugs above, so
+  they can't silently reappear.
+
+333 tests passing (up from a suite that previously hung indefinitely and
+never completed a full run), stable across repeated runs.
+
 ## [0.2.0] - 2026-07-22
 
 ### Added

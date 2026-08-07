@@ -32,7 +32,19 @@ impl OllamaClient {
     pub fn new(base_url: &str) -> Self {
         OllamaClient {
             base_url: base_url.to_string(),
-            client: reqwest::Client::new(),
+            // reqwest::Client::new() has NO timeout at all by default, which
+            // means is_available() — used as a health/hardware-probe check —
+            // could hang indefinitely if Ollama isn't reachable (found via a
+            // test suite run that hung for minutes with nothing listening on
+            // localhost:11434). connect_timeout is short since "can't even
+            // open a TCP connection" should fail fast; the overall request
+            // timeout is left more generous since real generation calls
+            // against a reachable Ollama can legitimately take a while.
+            client: reqwest::Client::builder()
+                .connect_timeout(std::time::Duration::from_secs(3))
+                .timeout(std::time::Duration::from_secs(120))
+                .build()
+                .unwrap_or_default(),
         }
     }
 

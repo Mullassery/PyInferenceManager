@@ -58,6 +58,10 @@ impl CloudClient {
             .header("anthropic-version", "2023-06-01")
             .header("content-type", "application/json")
             .json(&request_body)
+            // See the identical fix + comment in openai_client.rs: no
+            // timeout here would let a hung/unreachable endpoint block
+            // forever instead of failing over.
+            .timeout(std::time::Duration::from_secs(60))
             .send()
             .await
             .map_err(|e| crate::Error::CloudError(format!("HTTP request failed: {}", e)))?;

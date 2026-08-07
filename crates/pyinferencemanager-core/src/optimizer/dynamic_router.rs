@@ -74,9 +74,15 @@ impl DynamicRouter {
             let success_rate = if success { 1.0 } else { 0.0 };
             perf.success_rate = (alpha * success_rate) + ((1.0 - alpha) * perf.success_rate);
 
-            // Update latency (exponential moving average)
+            // Update latency (exponential moving average). Do the blend in
+            // f32 and cast the result once at the end — `alpha as u64` and
+            // `(1.0 - alpha) as u64` both truncate to 0 for any alpha in
+            // (0.0, 1.0), which silently made avg_latency_ms always exactly
+            // 0 for every provider (found because it made the "high
+            // complexity" routing test fail in a way that didn't match
+            // either the old or the intended behavior).
             perf.avg_latency_ms =
-                (alpha as u64 * latency_ms) + ((1.0 - alpha) as u64 * perf.avg_latency_ms);
+                ((alpha * latency_ms as f32) + ((1.0 - alpha) * perf.avg_latency_ms as f32)) as u64;
 
             // Update cost
             if old_count > 0 {
@@ -209,15 +215,27 @@ mod tests {
         router.register_provider("anthropic".to_string());
         router.register_provider("openai".to_string());
 
-        // Make anthropic more reliable
+        // Make anthropic clearly more reliable (higher success rate),
+        // despite being slower and more expensive — health_score weights
+        // success_rate at 70% vs latency's 30%, so a large reliability gap
+        // should dominate a moderate latency/cost disadvantage.
+        //
+        // (An earlier version of this test tried to establish "more
+        // reliable" purely via a higher update() call count at the same
+        // 100% success rate for both providers. That's not what the
+        // algorithm actually measures — success_rate is an EMA of outcomes,
+        // not a confidence-weighted-by-sample-size score — so the test's
+        // expected winner didn't follow from the code it was testing. This
+        // version makes the success-rate gap explicit and unambiguous.)
         for _ in 0..10 {
             router.update_performance("anthropic", true, 200, 0.5);
         }
-        for _ in 0..5 {
-            router.update_performance("openai", true, 100, 0.3);
+        for i in 0..10 {
+            router.update_performance("openai", i % 2 == 0, 100, 0.3); // 50% success rate
         }
 
-        // High complexity should prefer more reliable provider
+        // High complexity should prefer the more reliable provider even
+        // though it's slower and pricier.
         let selected = router.select_provider_for_complexity(0.8);
         assert_eq!(selected, Some("anthropic".to_string()));
     }
@@ -237,6 +255,39 @@ mod tests {
         // Low complexity should prefer cheaper provider
         let selected = router.select_provider_for_complexity(0.3);
         assert_eq!(selected, Some("openai".to_string()));
+    }
+
+    #[test]
+    fn test_update_performance_tracks_real_latency_not_always_zero() {
+        // Regression test: `alpha as u64` / `(1.0 - alpha) as u64` (alpha =
+        // 0.1) both truncate to 0 in Rust, which made avg_latency_ms always
+        // exactly 0 regardless of the latency values passed in — silently
+        // defeating the "dynamic routing based on real-time performance"
+        // claim, since latency never actually factored into health_score.
+        let mut router = DynamicRouter::new();
+        router.register_provider("test-provider".to_string());
+        // Repeated worst-case-latency (5000ms, the calibrated cap in
+        // calculate_health_score) updates so the latency EMA converges well
+        // away from its 0 starting point — success stays 1.0 throughout, so
+        // any drop in health_score below "perfect" can only come from
+        // avg_latency_ms genuinely reflecting the recorded latency.
+        for _ in 0..30 {
+            router.update_performance("test-provider", true, 5000, 0.1);
+        }
+
+        let ranking = router.get_provider_ranking();
+        let (_, health_score) = ranking.iter().find(|(name, _)| name == "test-provider").unwrap();
+
+        // success_rate stays ~1.0 (every call succeeded). If avg_latency_ms
+        // were stuck at 0 (the bug), health_score would be ~1.0*0.7+1.0*0.3
+        // = 1.0. With latency correctly converging toward the 5000ms cap,
+        // latency_score converges toward 0, so health_score should converge
+        // toward ~1.0*0.7 + 0.0*0.3 = 0.7.
+        assert!(
+            *health_score < 0.85,
+            "health_score {health_score} is too high for sustained worst-case latency — \
+             suggests avg_latency_ms isn't tracking real input (bug gives ~1.0)"
+        );
     }
 
     #[test]
