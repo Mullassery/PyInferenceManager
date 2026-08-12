@@ -1,9 +1,0 @@
-/Users/georgimullassery/PyInferenceManager/target/release/deps/opentelemetry_prometheus-1279e6f964432f36.d: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/config.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/utils.rs
-
-/Users/georgimullassery/PyInferenceManager/target/release/deps/libopentelemetry_prometheus-1279e6f964432f36.rlib: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/config.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/utils.rs
-
-/Users/georgimullassery/PyInferenceManager/target/release/deps/libopentelemetry_prometheus-1279e6f964432f36.rmeta: /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/lib.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/config.rs /Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/utils.rs
-
-/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/lib.rs:
-/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/config.rs:
-/Users/georgimullassery/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-prometheus-0.13.0/src/utils.rs:
