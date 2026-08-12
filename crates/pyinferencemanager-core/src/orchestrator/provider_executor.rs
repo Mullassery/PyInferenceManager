@@ -1,4 +1,4 @@
-use crate::engines::{CloudClient, OpenAIClient};
+use crate::engines::{CloudClient, GeminiClient, OpenAIClient};
 use crate::error_classifier::ErrorClassifier;
 use crate::types::CloudProvider;
 use crate::Result;
@@ -28,6 +28,9 @@ impl ProviderExecutor {
             }
             CloudProvider::OpenAI { model } => {
                 Self::execute_openai(model.clone(), request.prompt, request.max_tokens).await
+            }
+            CloudProvider::Gemini { model } => {
+                Self::execute_gemini(model.clone(), request.prompt, request.max_tokens).await
             }
         }
     }
@@ -67,6 +70,28 @@ impl ProviderExecutor {
             output: response.text,
             tokens_used: response.tokens_used,
             provider_name: format!("openai:{}", model),
+        })
+    }
+
+    /// Execute on Google Gemini
+    async fn execute_gemini(
+        model: String,
+        prompt: String,
+        max_tokens: u32,
+    ) -> Result<ProviderExecutionResult> {
+        let api_key = std::env::var("GEMINI_API_KEY")
+            .or_else(|_| std::env::var("GOOGLE_API_KEY"))
+            .map_err(|_| {
+                crate::Error::CloudError("GEMINI_API_KEY (or GOOGLE_API_KEY) not set".to_string())
+            })?;
+
+        let client = GeminiClient::new(api_key, model.clone());
+        let response = client.complete(&prompt, max_tokens).await?;
+
+        Ok(ProviderExecutionResult {
+            output: response.text,
+            tokens_used: response.tokens_used,
+            provider_name: format!("gemini:{}", model),
         })
     }
 

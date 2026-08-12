@@ -10,18 +10,36 @@ pub struct OpenAIResponse {
 pub struct OpenAIClient {
     api_key: String,
     model: String,
+    // Reused across every request instead of constructing a fresh
+    // reqwest::Client (and paying a new connection-pool/TLS setup cost) per
+    // call — see the identical fix in cloud_client.rs.
+    client: reqwest::Client,
 }
 
 impl OpenAIClient {
     pub fn new(api_key: String, model: String) -> Self {
-        OpenAIClient { api_key, model }
+        OpenAIClient {
+            api_key,
+            model,
+            client: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(60))
+                .build()
+                .unwrap_or_default(),
+        }
     }
 
     pub fn with_defaults() -> Self {
-        OpenAIClient {
-            api_key: std::env::var("OPENAI_API_KEY").unwrap_or_default(),
-            model: "gpt-4o-mini".to_string(),
-        }
+        Self::new(
+            std::env::var("OPENAI_API_KEY").unwrap_or_default(),
+            "gpt-4o-mini".to_string(),
+        )
+    }
+
+    /// Base URL for the OpenAI Chat Completions API. Overridable via
+    /// OPENAI_BASE_URL (e.g. Azure OpenAI-style proxies, or a local mock
+    /// server in tests) — defaults to the real public API.
+    fn base_url() -> String {
+        std::env::var("OPENAI_BASE_URL").unwrap_or_else(|_| "https://api.openai.com".to_string())
     }
 
     pub async fn complete(&self, prompt: &str, max_tokens: u32) -> crate::Result<OpenAIResponse> {
@@ -39,7 +57,7 @@ impl OpenAIClient {
         prompt: &str,
         max_tokens: u32,
     ) -> crate::Result<OpenAIResponse> {
-        let url = "https://api.openai.com/v1/chat/completions";
+        let url = format!("{}/v1/chat/completions", Self::base_url());
 
         let request_body = serde_json::json!({
             "model": self.model,
@@ -52,17 +70,12 @@ impl OpenAIClient {
             ]
         });
 
-        let response = reqwest::Client::new()
-            .post(url)
+        let response = self
+            .client
+            .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("content-type", "application/json")
             .json(&request_body)
-            // No timeout here would let a hung/unreachable OpenAI endpoint
-            // block forever instead of triggering this orchestrator's
-            // failover to another provider — defeating the whole point of
-            // "reliable multi-provider routing." (found via a test run that
-            // hung indefinitely on an equivalent missing timeout elsewhere.)
-            .timeout(std::time::Duration::from_secs(60))
             .send()
             .await
             .map_err(|e| crate::Error::CloudError(format!("HTTP request failed: {}", e)))?;
@@ -148,5 +161,61 @@ mod tests {
         let client = OpenAIClient::new("".to_string(), "gpt-4o-mini".to_string());
         let result = client.complete("test", 100).await;
         assert!(result.is_err());
+    }
+
+    // See the identical note in cloud_client.rs: these mutate the
+    // process-wide OPENAI_BASE_URL env var, so they're serialized relative
+    // to each other.
+    use serial_test::serial;
+    use wiremock::matchers::{header, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[tokio::test]
+    #[serial]
+    async fn test_complete_via_http_real_request_response_shape() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/v1/chat/completions"))
+            .and(header("Authorization", "Bearer test-key"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "choices": [{
+                    "message": {"role": "assistant", "content": "Hello from GPT"},
+                    "finish_reason": "stop"
+                }],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 4, "total_tokens": 9}
+            })))
+            .mount(&mock_server)
+            .await;
+
+        std::env::set_var("OPENAI_BASE_URL", mock_server.uri());
+        let client = OpenAIClient::new("test-key".to_string(), "gpt-4o-mini".to_string());
+        let result = client.complete("Hi", 50).await;
+        std::env::remove_var("OPENAI_BASE_URL");
+
+        let response = result.expect("mocked request should succeed");
+        assert_eq!(response.text, "Hello from GPT");
+        assert_eq!(response.tokens_used, 4);
+        assert_eq!(response.finish_reason, "stop");
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_complete_via_http_propagates_error_status() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/v1/chat/completions"))
+            .respond_with(ResponseTemplate::new(500).set_body_string("server error"))
+            .mount(&mock_server)
+            .await;
+
+        std::env::set_var("OPENAI_BASE_URL", mock_server.uri());
+        let client = OpenAIClient::new("test-key".to_string(), "gpt-4o-mini".to_string());
+        let result = client.complete("Hi", 50).await;
+        std::env::remove_var("OPENAI_BASE_URL");
+
+        let err = result.expect_err("500 should surface as an error");
+        assert!(err.to_string().contains("500"));
     }
 }

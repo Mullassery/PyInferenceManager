@@ -15,6 +15,7 @@ pub enum ExecutionEngine {
 pub enum CloudProvider {
     Anthropic { model: String },
     OpenAI { model: String },
+    Gemini { model: String },
 }
 
 impl CloudProvider {
@@ -22,6 +23,7 @@ impl CloudProvider {
         match self {
             CloudProvider::Anthropic { model } => format!("anthropic:{}", model),
             CloudProvider::OpenAI { model } => format!("openai:{}", model),
+            CloudProvider::Gemini { model } => format!("gemini:{}", model),
         }
     }
 }

@@ -68,6 +68,7 @@ impl RealLoadTester {
             let provider_name = match provider {
                 CloudProvider::Anthropic { .. } => "anthropic".to_string(),
                 CloudProvider::OpenAI { .. } => "openai".to_string(),
+                CloudProvider::Gemini { .. } => "gemini".to_string(),
             };
             dynamic_router.register_provider(provider_name);
         }

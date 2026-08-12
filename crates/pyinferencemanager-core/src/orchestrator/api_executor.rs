@@ -166,11 +166,16 @@ impl ApiExecutor {
     async fn execute_internal(&self, request: &ApiExecutionRequest) -> Result<(String, u32)> {
         // This will be implemented to call real provider APIs
         // For now, simulate execution
-        let api_key = match &request.provider {
-            CloudProvider::Anthropic { model } => std::env::var("ANTHROPIC_API_KEY")
+        let _api_key = match &request.provider {
+            CloudProvider::Anthropic { .. } => std::env::var("ANTHROPIC_API_KEY")
                 .map_err(|_| crate::Error::CloudError("ANTHROPIC_API_KEY not set".to_string()))?,
-            CloudProvider::OpenAI { model } => std::env::var("OPENAI_API_KEY")
+            CloudProvider::OpenAI { .. } => std::env::var("OPENAI_API_KEY")
                 .map_err(|_| crate::Error::CloudError("OPENAI_API_KEY not set".to_string()))?,
+            CloudProvider::Gemini { .. } => std::env::var("GEMINI_API_KEY")
+                .or_else(|_| std::env::var("GOOGLE_API_KEY"))
+                .map_err(|_| {
+                    crate::Error::CloudError("GEMINI_API_KEY (or GOOGLE_API_KEY) not set".to_string())
+                })?,
         };
 
         // Simulate API call
@@ -194,10 +199,7 @@ impl ApiExecutor {
     }
 
     fn get_provider_name(&self, provider: &CloudProvider) -> String {
-        match provider {
-            CloudProvider::Anthropic { model } => format!("anthropic:{}", model),
-            CloudProvider::OpenAI { model } => format!("openai:{}", model),
-        }
+        provider.key()
     }
 }
 

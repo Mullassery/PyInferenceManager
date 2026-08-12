@@ -27,6 +27,16 @@ dist/
 build/
 .pytest_cache/
 
+# Compiled PyO3 extension module (built locally via `maturin develop`/`maturin
+# build` into pyinferencemanager/ — never hand-committed; a stale copy of
+# this previously ended up checked into git under a dead src/ layout).
+pyinferencemanager/_core*.so
+pyinferencemanager/_core*.pyd
+
+# Editor/manual backup files (a stale README.md.bak and __init__.py.bak
+# previously shipped in the repo and silently contradicted the real files).
+*.bak
+
 # Virtual environments
 venv/
 env/

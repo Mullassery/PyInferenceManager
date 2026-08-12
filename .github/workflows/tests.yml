@@ -28,7 +28,7 @@ jobs:
         continue-on-error: true # not blocking on day one: this repo has 100+ pre-existing warnings to clean up separately
 
   maturin-build:
-    name: Build Python extension (maturin)
+    name: Build Python extension (maturin) & run pytest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,8 +41,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Install maturin
-        run: pip install maturin
+      - name: Install maturin and test dependencies
+        run: pip install maturin pytest pytest-asyncio
 
       - name: Build extension
         run: maturin build --release -m crates/pyinferencemanager-py/Cargo.toml
@@ -51,3 +51,12 @@ jobs:
         run: |
           pip install target/wheels/*.whl
           python -c "import pyinferencemanager; print('import OK')"
+
+      - name: Run Python test suite
+        # No live API keys or Ollama in CI — Orchestrator.run() is designed
+        # to gracefully degrade (return a result explaining the failure)
+        # rather than raise when a backend is unreachable, so the suite
+        # exercises real code paths (construction, plan/run/provider
+        # ranking, MCP tool wiring, budget/retry/load-test bindings,
+        # connector security defaults) without needing secrets.
+        run: pytest tests/ -v

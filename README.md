@@ -1,8 +1,8 @@
 # PyInferenceManager
 
-**Use any LLM. Switch models without rewriting code. Cut inference costs 40-60%.**
+**A multi-provider LLM inference orchestrator with cost/latency-aware routing, real retry + budget guardrails, and local-first execution.**
 
-Intelligently route requests across Claude, GPT-4, Gemini, Llama, Mistral, and more based on cost, speed, or availability. One line of code. Automatic failover. No vendor lock-in.
+Routes requests to Anthropic Claude, OpenAI GPT, Google Gemini, or a local Ollama model based on task complexity, privacy, and observed provider health — with real retry/backoff on failures and a real spend cap you configure.
 
 [![PyPI](https://img.shields.io/pypi/v/pyinferencemanager)](https://pypi.org/project/pyinferencemanager)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
@@ -11,132 +11,109 @@ Intelligently route requests across Claude, GPT-4, Gemini, Llama, Mistral, and m
 
 ---
 
-## 30-Second Start
+## What this actually is
 
-```python
-from pyinferencemanager import Manager
+The core (Rust, ~11k lines, PyO3 bindings) is a workload orchestrator: it builds a small execution DAG for a task, profiles your local hardware, picks an engine (local Ollama model vs. a cloud provider) based on complexity/privacy/cost, executes with real retry and budget enforcement, and semantically caches results.
 
-# Create manager (routes across all providers)
-mgr = Manager()
+The Python API surface is a single `Orchestrator` class. There is no `Manager.chat()`, no streaming API, and no 11-provider marketplace — see [Providers](#providers) for the honest list.
 
-# Same code. Different models. Different costs.
-response = mgr.chat(
-    "Which LLM should I use for this task?",
-    prefer="cheapest"  # or "fastest" or "highest-quality"
-)
-
-print(response.text)
-print(f"Used: {response.model}")  # Which provider was chosen?
-print(f"Cost: ${response.cost:.4f}")  # How much did it cost?
-```
-
----
-
-## Why PyInferenceManager?
-
-**The Problem:**
-- Each LLM has different APIs (Claude, OpenAI, Google, Anthropic, etc.)
-- Costs vary wildly (GPT-4 is 10x more expensive than Llama)
-- You can't switch models without rewriting your code
-- Provider outages break your application
-
-**The Solution:**
-- One unified API for all LLM providers
-- Automatic routing based on cost, speed, or quality
-- Provider failover (if Claude is down, switch to GPT-4 automatically)
-- Easy cost comparison and optimization
-
----
-
-## Key Features
-
-- **11 Providers:** Claude (Anthropic), GPT-4/3.5 (OpenAI), Gemini (Google), Llama (Meta), Mistral, Cohere, PaLM, Falcon, and more
-- **Smart Routing:** Automatic selection based on cost/speed/quality
-- **Cost Tracking:** Real-time cost estimation and reporting
-- **Failover:** Automatic provider switching if one goes down
-- **Batch Processing:** Process 1000s of requests with automatic optimization
-- **Streaming Support:** Get responses as they arrive
-- **Rate Limiting:** Built-in quotas and backoff
-
----
-
-## Real-World Use Cases
-
-**Cost Optimization:**
-```python
-# Cheap tasks use Llama, complex tasks use Claude
-response = mgr.chat(prompt, prefer="cheapest")
-# Llama for summarization: $0.0001
-# Claude for reasoning: $0.001
-# Automatic choice based on task difficulty
-```
-
-**Reliability:**
-```python
-# If Claude API is down, automatically use GPT-4
-response = mgr.chat(prompt, fallback="gpt-4")
-```
-
-**Multi-Model Comparison:**
-```python
-# Test a prompt across all providers
-for model in ["claude", "gpt-4", "gemini", "llama"]:
-    result = mgr.chat(prompt, model=model)
-    print(f"{model}: ${result.cost}")
-```
-
----
-
-## Provider Comparison
-
-| Provider | Speed | Cost | Quality | Notes |
-|----------|-------|------|---------|-------|
-| Claude 3 Opus | Fast | $$ | Excellent | Best reasoning |
-| GPT-4 | Medium | $$$ | Excellent | General purpose |
-| Gemini | Fast | $ | Good | Great value |
-| Llama 2 | Slow | $ | Good | Local option |
-| Mistral | Fast | $ | Good | European option |
-
----
-
-## Installation
+## Install
 
 ```bash
 pip install pyinferencemanager
-# or with uv
-uv pip install pyinferencemanager
 ```
 
-Set API keys (one time):
+Requires Python 3.10+.
+
+Set whichever provider keys you plan to use (none are required for local-only Ollama use):
+
 ```bash
-export ANTHROPIC_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
 export OPENAI_API_KEY=sk-...
-export GOOGLE_API_KEY=goog-...
+export GEMINI_API_KEY=...   # or GOOGLE_API_KEY
 ```
 
----
+See [`.env.example`](.env.example).
 
-## Documentation
+## Quick start
 
-- [Quick Start](docs/QUICKSTART.md) — Get your first request working
-- [Providers](docs/PROVIDERS.md) — How to connect to each service
-- [Routing Strategies](docs/ROUTING.md) — Cost vs. speed vs. quality
-- [Examples](examples/) — Real-world applications
+```python
+from pyinferencemanager import Orchestrator
 
----
+orchestrator = Orchestrator(mode="local_first")  # or "cloud_first"
+
+result = orchestrator.run(task="question_answering", message="What is the capital of France?")
+print(result.output)
+print(f"Engines used: {result.engines_used}")
+print(f"Cost: ${result.total_cost_usd:.4f} | Latency: {result.total_latency_ms}ms | Tokens: {result.total_tokens}")
+```
+
+`mode="local_first"` runs on your local Ollama model when it's adequate for the task's complexity and escalates to a cloud provider otherwise. `mode="cloud_first"` prefers a cloud provider, falling back to local only for very low-complexity tasks. `privacy="high"` on any call always forces local execution regardless of mode.
+
+If the selected backend is unreachable or unauthenticated, `run()` doesn't raise — it returns a result whose `output` says so (e.g. `"[cloud inference unavailable: ...]"`), so a single bad provider doesn't crash your pipeline.
+
+## Core API
+
+```python
+orchestrator = Orchestrator(mode="local_first")
+
+# Execute a task — real inference against Ollama or a cloud provider.
+result = orchestrator.run(task="...", file=None, message=None, privacy="low")
+# result.output, .total_tokens, .total_cost_usd, .total_latency_ms, .engines_used, .cache_hits
+
+# Estimate cost/latency without executing anything.
+plan = orchestrator.plan("Summarize this document")
+# plan.stages, .estimated_cost_usd, .estimated_latency_ms, .local_first
+
+# Real-time provider health, from actually completed cloud calls.
+orchestrator.provider_ranking()      # [(provider_key, health_score), ...]
+orchestrator.provider_performance()  # {provider_key: {success_rate, avg_latency_ms, ...}}
+
+# Cost guardrails, enforced on every real cloud call.
+orchestrator.configure_budget(max_cost_usd=10.0, max_requests=1000,
+                               alert_threshold_percent=80.0, enforce_hard_limit=True)
+orchestrator.budget_status()
+
+# Retry/backoff policy for retryable errors (HTTP 429/408/5xx).
+orchestrator.configure_retry(max_attempts=3, backoff="exponential",
+                              initial_ms=100, max_ms=5000)
+
+# Synthetic load test exercising the same budget + dynamic-routing logic
+# run() uses, at a volume impractical against live APIs. Latencies/costs
+# here are simulated, not real network calls.
+orchestrator.run_load_test(num_requests=200, budget_usd=5.0)
+
+# Local hardware profile (memory tier, Apple Silicon/Metal, Ollama models).
+orchestrator.profile_hardware()
+orchestrator.available_backends()
+```
+
+See [`examples/`](examples/) for runnable scripts covering each of these.
+
+## Providers
+
+Real HTTP calls, with retry/backoff and cost tracking:
+
+| Provider | Env var | Notes |
+|---|---|---|
+| Anthropic Claude | `ANTHROPIC_API_KEY` | `claude-haiku-4-5`, `claude-opus-4-1` |
+| OpenAI | `OPENAI_API_KEY` | `gpt-4o-mini` |
+| Google Gemini | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | `gemini-1.5-flash` |
+| Ollama (local) | — | whatever models you've pulled locally |
+
+Additionally, `vllm`, `tensorrt_llm`, `mlc_llm`, and `colibri` exist as **cost-estimator-only stubs** (`BackendKind`/`RuntimeBackend` trait implementations with real cost/latency estimation logic, but no live inference) — they're placeholders for self-hosted inference servers, not currently wired to make real calls. `orchestrator.available_backends()` lists all of these honestly, including the stubs.
+
+## MCP tools
+
+`pyinferencemanager._mcp_tools.PyInferenceManagerMCPHandler` exposes 13 MCP-style tools (`list_available_models`, `execute_inference`, `estimate_inference_cost`, `get_provider_status`, etc.), all backed by a real `Orchestrator` instance — no hardcoded responses. See [`examples/mcp_pyinferencemanager.py`](examples/mcp_pyinferencemanager.py).
+
+The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) binds to `127.0.0.1` by default with scoped CORS and permissions; binding elsewhere requires passing `allow_remote=True` explicitly.
+
+## Testing
+
+- Rust core: `cargo test --workspace` (350+ tests, including HTTP-mocked request/response tests for every cloud client via [`wiremock`](https://docs.rs/wiremock)).
+- Python: `pytest tests/` — covers `Orchestrator.run/plan/provider_ranking`, the MCP tool handlers, budget/retry configuration, load testing, and MCP connector security defaults, all without requiring live API keys.
 
 ## License
 
-Proprietary License - Free to use with explicit attribution. See [LICENSE](LICENSE).
-
----
-
-**PyInferenceManager v2.0.0** | Smart LLM routing | Python 3.10+
-
-## License
-
-MIT
-
----
-
-**MCP 2.0 Mega-Platform | v2.0.0 | Wheels-Only Distribution**
+Proprietary License — free to use with explicit attribution. See [LICENSE](LICENSE).

@@ -32,7 +32,11 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Typing :: Typed",
 ]
-dependencies = ["anthropic>=0.100.0"]
+dependencies = []
+# Note: no Python-level HTTP/SDK dependencies — the compiled Rust core makes
+# HTTP calls to Anthropic/OpenAI/Gemini directly via reqwest. An unused
+# `anthropic>=0.100.0` Python SDK dependency previously lived here (nothing
+# in this package ever imported it) and has been removed.
 
 [project.urls]
 Homepage = "https://github.com/Mullassery/pyinferencemanager"
@@ -48,3 +52,6 @@ dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "maturin>=1.0", "ruff>=0.5.0"]
 python-source = "."
 module-name = "pyinferencemanager._core"
 manifest-path = "crates/pyinferencemanager-py/Cargo.toml"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

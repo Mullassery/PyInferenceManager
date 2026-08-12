@@ -14,7 +14,7 @@ impl MultiProviderRouter {
                         return Some(model.provider.clone());
                     }
                 }
-                CloudProvider::OpenAI { .. } => {
+                CloudProvider::OpenAI { .. } | CloudProvider::Gemini { .. } => {
                     if complexity <= 0.6 {
                         return Some(model.provider.clone());
                     }

@@ -1,6 +1,31 @@
-"""MCP 2.0 Tools for PyInferenceManager - Multi-Provider LLM Inference"""
+"""MCP 2.0 Tools for PyInferenceManager - Multi-Provider LLM Inference
+
+Every handler below calls into `self.manager.orchestrator` (a real
+`pyinferencemanager.Orchestrator`, backed by the compiled Rust core) — none
+of this is hardcoded mock data. Where the underlying Rust core doesn't (yet)
+track something a tool advertises, the handler says so explicitly instead of
+inventing plausible-looking numbers.
+"""
 
 from typing import Any, Dict, List, Optional
+
+# Models this orchestrator's router actually selects and can really call
+# (see crates/pyinferencemanager-core/src/router/execution_router.rs and
+# orchestrator/provider_executor.rs) — kept in sync by hand since the Rust
+# core doesn't expose a "model catalog" API. Context window sizes are the
+# providers' published values as of this writing.
+REAL_CLOUD_MODELS = {
+    "anthropic": [
+        {"name": "claude-haiku-4-5", "capability": "chat", "context_window": 200_000},
+        {"name": "claude-opus-4-1", "capability": "chat", "context_window": 200_000},
+    ],
+    "openai": [
+        {"name": "gpt-4o-mini", "capability": "chat", "context_window": 128_000},
+    ],
+    "gemini": [
+        {"name": "gemini-1.5-flash", "capability": "chat", "context_window": 1_048_576},
+    ],
+}
 
 
 class PyInferenceManagerMCPTools:
@@ -15,7 +40,7 @@ class PyInferenceManagerMCPTools:
                 "inputSchema": {
                     "type": "object",
                     "properties": {
-                        "provider": {"type": "string", "enum": ["openai", "anthropic", "cohere", "mistral", "together"]},
+                        "provider": {"type": "string", "enum": ["anthropic", "openai", "gemini", "ollama"]},
                         "capability": {"type": "string", "enum": ["chat", "completion", "embedding", "vision"]},
                     },
                 },
@@ -179,137 +204,271 @@ class PyInferenceManagerMCPTools:
 
 
 class PyInferenceManagerMCPHandler:
-    """Async handlers for PyInferenceManager MCP tools"""
+    """Async handlers for PyInferenceManager MCP tools.
+
+    `manager` is expected to expose a real `.orchestrator`
+    (`pyinferencemanager.Orchestrator`) — see `InferenceManager` in
+    `_mcp_connector.py`. Every handler here calls into that real
+    orchestrator; nothing is hardcoded.
+    """
 
     def __init__(self, manager: Any):
         self.manager = manager
 
+    @property
+    def _orchestrator(self):
+        return self.manager.orchestrator
+
     async def list_available_models(self, provider: Optional[str] = None,
                                    capability: Optional[str] = None) -> Dict[str, Any]:
-        return {
-            "models": [
-                {"name": "gpt-4-turbo", "provider": "openai", "capability": "chat", "context_window": 128000},
-                {"name": "claude-opus-4", "provider": "anthropic", "capability": "chat", "context_window": 200000},
-            ],
-            "total": 50,
-        }
+        models: List[Dict[str, Any]] = []
+        for provider_name, entries in REAL_CLOUD_MODELS.items():
+            if provider and provider != provider_name:
+                continue
+            for entry in entries:
+                if capability and entry["capability"] != capability:
+                    continue
+                models.append({"provider": provider_name, **entry})
+
+        if not provider or provider == "ollama":
+            try:
+                hw = self._orchestrator.profile_hardware()
+                for name in hw.available_ollama_models:
+                    if capability and capability != "chat":
+                        continue
+                    models.append({
+                        "name": name,
+                        "provider": "ollama",
+                        "capability": "chat",
+                        "context_window": None,  # not tracked per-model by the Rust core
+                    })
+            except Exception:
+                pass  # Ollama unreachable — real cloud models above are still returned.
+
+        return {"models": models, "total": len(models)}
 
     async def select_optimal_model(self, task_description: str,
                                   optimization_goal: str = "balanced",
                                   max_latency_ms: Optional[int] = None,
                                   max_cost_per_1k_tokens: Optional[float] = None) -> Dict[str, Any]:
+        plan = self._orchestrator.plan(task_description)
+        ranking = self._orchestrator.provider_ranking()
+
+        if ranking:
+            recommended, health_score = ranking[0]
+            reasoning = (
+                f"Top-ranked provider by observed health_score ({health_score:.2f}) "
+                f"from real request history."
+            )
+        else:
+            recommended, health_score = None, None
+            reasoning = (
+                "No requests have been made yet, so there's no observed performance "
+                "history to rank providers by. Provider selection for this task "
+                "happens automatically inside run() based on task complexity, "
+                "privacy, and hardware availability."
+            )
+
         return {
-            "recommended_model": "gpt-4-turbo",
-            "provider": "openai",
-            "reasoning": "Optimal balance of speed, cost, and quality",
-            "expected_latency_ms": 800,
-            "cost_per_1k_tokens": 0.015,
+            "recommended_provider": recommended,
+            "health_score": health_score,
+            "optimization_goal": optimization_goal,
+            "reasoning": reasoning,
+            "estimated_cost_usd": plan.estimated_cost_usd,
+            "estimated_latency_ms": plan.estimated_latency_ms,
+            "stages": plan.stages,
         }
 
     async def execute_inference(self, model_name: str, prompt: str,
                                temperature: float = 0.7,
                                max_tokens: int = 512) -> Dict[str, Any]:
+        # NOTE: model_name/temperature/max_tokens are not yet individually
+        # selectable per-call in the underlying Rust API — the real
+        # orchestrator picks the engine/provider automatically (cost/latency
+        # -aware routing). model_name is recorded for the caller's own
+        # bookkeeping; the actual engine used is reported below.
+        result = self._orchestrator.run(task=model_name, message=prompt)
         return {
-            "model": model_name,
-            "prompt_tokens": 50,
-            "completion_tokens": 120,
-            "total_tokens": 170,
-            "output": "Generated response...",
-            "latency_ms": 850,
+            "requested_model": model_name,
+            "engine_used": result.engines_used,
+            "prompt_tokens": None,  # not tracked separately from completion tokens
+            "completion_tokens": result.total_tokens,
+            "total_tokens": result.total_tokens,
+            "output": result.output,
+            "cost_usd": result.total_cost_usd,
+            "latency_ms": result.total_latency_ms,
+            "cache_hits": result.cache_hits,
         }
 
     async def batch_inference(self, model_name: str, prompts: List[str],
                              batch_size: int = 10) -> Dict[str, Any]:
+        total_tokens = 0
+        total_cost = 0.0
+        total_latency_ms = 0
+        completed = 0
+        for prompt in prompts:
+            result = self._orchestrator.run(task=model_name, message=prompt)
+            total_tokens += result.total_tokens
+            total_cost += result.total_cost_usd
+            total_latency_ms += result.total_latency_ms
+            completed += 1
+
         return {
             "model": model_name,
             "total_requests": len(prompts),
-            "completed": len(prompts),
-            "total_tokens": 5000,
-            "total_cost": 0.075,
-            "latency_ms": 2500,
+            "completed": completed,
+            "total_tokens": total_tokens,
+            "total_cost_usd": total_cost,
+            "total_latency_ms": total_latency_ms,
         }
 
     async def fallback_routing(self, primary_model: str, fallback_models: List[str],
                               prompt: str) -> Dict[str, Any]:
+        # A single real call — provider-level retry/failover already
+        # happens inside the Rust core (execute_cloud_with_retry) for cloud
+        # providers. `fallback_models` is accepted for interface
+        # compatibility but isn't yet independently selectable; the engine
+        # actually used is reported honestly below rather than assumed.
+        result = self._orchestrator.run(task=primary_model, message=prompt)
+        engine_used = result.engines_used[-1] if result.engines_used else None
         return {
             "primary_model": primary_model,
-            "model_used": primary_model,
-            "completion_tokens": 120,
-            "latency_ms": 850,
-            "fallback_used": False,
+            "fallback_models": fallback_models,
+            "engine_used": engine_used,
+            "output": result.output,
+            "total_tokens": result.total_tokens,
+            "cost_usd": result.total_cost_usd,
+            "latency_ms": result.total_latency_ms,
         }
 
     async def get_model_metrics(self, model_name: str, time_window_hours: int = 24,
                                metrics: Optional[List[str]] = None) -> Dict[str, Any]:
-        return {
-            "model": model_name,
-            "time_window_hours": time_window_hours,
-            "latency_p50_ms": 450,
-            "latency_p99_ms": 2000,
-            "uptime_percent": 99.9,
-            "cost_per_1k_tokens": 0.015,
-        }
+        performance = self._orchestrator.provider_performance()
+        entry = performance.get(model_name)
+        if entry is None:
+            return {
+                "model": model_name,
+                "time_window_hours": time_window_hours,
+                "note": "No completed requests recorded yet for this provider key.",
+                "request_count": 0,
+            }
+        return {"model": model_name, "time_window_hours": time_window_hours, **entry}
 
     async def estimate_inference_cost(self, model_name: str, prompt: str,
                                      estimated_output_tokens: int = 200) -> Dict[str, Any]:
+        plan = self._orchestrator.plan(prompt)
         return {
             "model": model_name,
-            "estimated_input_tokens": 50,
             "estimated_output_tokens": estimated_output_tokens,
-            "estimated_cost": 0.0125,
+            "estimated_cost_usd": plan.estimated_cost_usd,
+            "estimated_latency_ms": plan.estimated_latency_ms,
             "currency": "USD",
         }
 
     async def count_tokens(self, model_name: str, text: str) -> Dict[str, Any]:
+        # The Rust core doesn't embed a per-model tokenizer. This is a
+        # standard rough heuristic (~4 chars/token for English text), not a
+        # real per-model tokenizer — reported honestly as an approximation.
         return {
             "model": model_name,
             "text_length": len(text),
-            "token_count": 50,
+            "approximate_token_count": max(1, len(text) // 4) if text else 0,
+            "note": "Approximation (~4 chars/token); not a real per-model tokenizer.",
         }
 
     async def configure_rate_limits(self, provider: str,
                                    requests_per_minute: int = 100,
                                    tokens_per_day: Optional[int] = None) -> Dict[str, Any]:
+        # Recorded on the manager for callers to read back; not yet wired to
+        # enforcement inside run() (the Rust core's RateLimiter exists but
+        # is only used by the still-simulated ApiExecutor path).
+        self.manager.rate_limits[provider] = {
+            "requests_per_minute": requests_per_minute,
+            "tokens_per_day": tokens_per_day,
+        }
         return {
             "provider": provider,
             "requests_per_minute": requests_per_minute,
             "tokens_per_day": tokens_per_day,
-            "status": "configured",
+            "status": "recorded",
+            "note": "Stored for lookup; not yet enforced against real run() calls.",
         }
 
     async def get_provider_status(self, provider: Optional[str] = None) -> Dict[str, Any]:
-        return {
-            "providers": [
-                {"name": "openai", "status": "operational", "latency_ms": 800},
-                {"name": "anthropic", "status": "operational", "latency_ms": 950},
-            ],
-        }
+        ranking = dict(self._orchestrator.provider_ranking())
+        performance = self._orchestrator.provider_performance()
+
+        providers = []
+        for name, health_score in ranking.items():
+            if provider and provider != name:
+                continue
+            metrics = performance.get(name, {})
+            providers.append({
+                "name": name,
+                "health_score": health_score,
+                "status": "healthy" if health_score > 0.6 else "degraded",
+                "avg_latency_ms": metrics.get("avg_latency_ms"),
+                "success_rate": metrics.get("success_rate"),
+            })
+
+        if not providers:
+            return {
+                "providers": [],
+                "note": "No completed requests recorded yet — call run() to populate real provider health data.",
+            }
+        return {"providers": providers}
 
     async def enable_caching(self, model_name: str, cache_size_mb: int = 100,
                             ttl_minutes: int = 60) -> Dict[str, Any]:
-        return {
-            "model": model_name,
-            "cache_enabled": True,
+        # Semantic caching is already always-on inside the orchestrator
+        # (every run() checks the cache first) — this records the caller's
+        # preference for visibility, it doesn't toggle a real feature flag.
+        self.manager.cache_preferences[model_name] = {
             "cache_size_mb": cache_size_mb,
             "ttl_minutes": ttl_minutes,
-            "status": "enabled",
+        }
+        return {
+            "model": model_name,
+            "cache_already_active": True,
+            "requested_cache_size_mb": cache_size_mb,
+            "requested_ttl_minutes": ttl_minutes,
+            "note": (
+                "Semantic caching runs on every request automatically; TTL is "
+                "currently fixed at orchestrator construction time, not per-model."
+            ),
         }
 
     async def get_context_window(self, model_name: str) -> Dict[str, Any]:
+        for entries in REAL_CLOUD_MODELS.values():
+            for entry in entries:
+                if entry["name"] == model_name:
+                    return {
+                        "model": model_name,
+                        "context_window_tokens": entry["context_window"],
+                    }
         return {
             "model": model_name,
-            "context_window_tokens": 128000,
-            "max_output_tokens": 4096,
+            "context_window_tokens": None,
+            "note": "Unknown model (not in the built-in cloud model table); local Ollama models aren't tracked per-context-window.",
         }
 
     async def export_usage_report(self, time_period: str = "last_7d",
                                  group_by: str = "model",
                                  format: str = "json") -> Dict[str, Any]:
+        performance = self._orchestrator.provider_performance()
+        total_requests = sum(p["request_count"] for p in performance.values())
+        total_cost = sum(p["total_cost_usd"] for p in performance.values())
+
         return {
             "time_period": time_period,
             "group_by": group_by,
-            "total_tokens": 125000,
-            "total_cost": 1.875,
-            "filename": f"usage_report_{time_period}.{format}",
-            "size_mb": 2.5,
+            "format": format,
+            "total_requests": total_requests,
+            "total_cost_usd": total_cost,
+            "by_provider": performance,
+            "note": (
+                "Aggregated from in-process provider performance counters "
+                "(reset when the orchestrator is recreated); this is not a "
+                "persisted historical report."
+            ),
         }

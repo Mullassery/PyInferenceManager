@@ -2,6 +2,97 @@
 
 All notable changes to PyInferenceManager are documented in this file.
 
+## [1.1.1] - 2026-08-12
+
+First published release to PyPI. This release closes the gap between what
+the Python API claimed to do and what it actually did — the previous
+`Orchestrator.run()` never called a real model at all (it returned
+`"Mock output from {engine}"` unconditionally); it now makes real calls.
+
+### Added
+- **Real inference wired end-to-end.** `Orchestrator.run()` now genuinely
+  calls a local Ollama model or a real cloud provider (Anthropic/OpenAI/
+  Gemini), instead of returning a hardcoded `"Mock output from ..."` string.
+  Falls back to a clearly-labeled `"[... inference unavailable: ...]"`
+  message (not a fabricated success) if the selected backend can't be
+  reached/authenticated.
+- **Google Gemini provider**: real HTTP client (`GeminiClient`), wired into
+  `CloudProvider`, `ProviderExecutor`, and the `RuntimeBackend` cost-
+  estimator trait, reading `GEMINI_API_KEY`/`GOOGLE_API_KEY`.
+- **Real retry logic.** `execute_cloud_with_retry` now actually retries
+  (previously it was single-shot despite the name), using the configured
+  `RetryConfig`/`BackoffStrategy` and real retryable-error classification
+  (429/408/5xx).
+- **Budget enforcement wired into real calls.** Every real cloud call now
+  checks `BudgetEnforcer::can_execute()` first and records observed cost
+  afterward; `Orchestrator.configure_budget()` / `.budget_status()` exposed
+  to Python.
+- **Retry configuration exposed to Python**: `Orchestrator.configure_retry()`.
+- **Load testing exposed to Python**: `Orchestrator.run_load_test()`,
+  backed by the existing (previously Python-inaccessible) Rust load-tester,
+  exercising real budget/dynamic-routing logic at volume (simulated
+  network I/O, documented as such).
+- **`Orchestrator.provider_performance()`** exposed (per-provider success
+  rate, latency, cost, health score, request count).
+- **MCP tool handlers wired to a real `Orchestrator`.** All 13
+  `PyInferenceManagerMCPHandler` methods previously returned hardcoded mock
+  data despite storing a real manager reference; they now call into it.
+- Real `pytest` suite (`tests/`) covering the Orchestrator API, MCP tool
+  wiring, budget/retry/load-test bindings, and MCP connector security
+  defaults — CI now runs it instead of an import-only smoke test.
+
+### Fixed
+- **MCP connector security defaults.** `start_mcp_connector()` defaulted to
+  `host="0.0.0.0"`, wildcard CORS (`["*"]`), and wildcard permissions
+  (`actions: ["*"], roles: ["*"]`) for every tool — an unauthenticated,
+  wide-open server on all interfaces if ever called. Now defaults to
+  `127.0.0.1`, scoped CORS, and per-tool scoped permissions; binding wider
+  requires an explicit `allow_remote=True`.
+- **Removed an undeclared cross-project dependency.** `_mcp_connector.py`
+  imported `BaseMCPConnector` from an unrelated `statguardian` package (with
+  a local fallback if that import failed) — leftover template boilerplate.
+  The fallback implementation is now the only implementation, adapted and
+  hardened as this project's own.
+- **Ollama response parsing was broken for every real call.**
+  `GenerateResponse` declared a field `eval_duration_ns` that doesn't exist
+  in Ollama's actual `/api/generate` response (the real field is
+  `eval_duration`) — every real (non-fixture) response failed to
+  deserialize. Found by actually exercising this against a running local
+  Ollama instance; the existing unit test didn't catch it because its
+  fixture reproduced the same wrong field name on both sides of the
+  round-trip.
+- **HTTP clients now pooled instead of reconnecting per request.**
+  `CloudClient`/`OpenAIClient` (and the new `GeminiClient`) now reuse one
+  `reqwest::Client` per instance instead of constructing a fresh one (with
+  a fresh connection pool and TLS handshake) on every single call.
+- Fixed a stale, dead Python package layout: a compiled `.so` extension
+  module and duplicate `__init__.py` were checked into git under `src/`
+  (unused — `pyproject.toml`'s `python-source = "."` never pointed at it),
+  alongside `README.md.bak`/`__init__.py.bak` backup files that silently
+  contradicted the real files. Removed; the real package now lives only at
+  `pyinferencemanager/`.
+- Untracked ~47k compiled `target/` build artifacts that had been
+  accidentally committed to git.
+- README rewritten to describe the real API (`Orchestrator`, not `Manager`),
+  the real provider list (Anthropic/OpenAI/Gemini/Ollama, plus honestly
+  labeled cost-estimator-only stubs), and a single consistent Proprietary
+  license section (previously contradicted itself: Proprietary badge +
+  License section, then a second "MIT" License section further down).
+- `examples/multi_provider_demo.py` and `examples/retry_and_cost_demo.py`
+  imported symbols (`OrchestratorConfig`, `ModelRegistry`, `LocalModel`,
+  `CloudModel`, `ExecutionMode`) that don't exist in the public API — both
+  would `ImportError` immediately. Rewritten against the real API.
+  `examples/mcp_pyinferencemanager.py` imported `PerceptionEngine`, leftover
+  boilerplate from an unrelated project — rewritten against the real MCP
+  handler API.
+- `.env.example` listed `DATABASE_URL`/`REDIS_URL`/`ELASTICSEARCH_URL`/etc.
+  (nothing in this codebase uses any of them) and never mentioned
+  `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GEMINI_API_KEY`, which the code
+  actually reads. Rewritten to match reality.
+- Removed an unused `anthropic>=0.100.0` Python dependency — nothing in this
+  package imports the Anthropic Python SDK; the Rust core calls its HTTP
+  API directly.
+
 ## [1.1.0] - 2026-08-07
 
 ### Fixed

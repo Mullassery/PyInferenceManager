@@ -3,7 +3,20 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenerateResponse {
     pub response: String,
+    // `#[serde(default)]` here because streaming/partial responses (or
+    // Ollama versions that omit stats) may not include these — better to
+    // deserialize with 0 than fail the whole response.
+    #[serde(default)]
     pub eval_count: u32,
+    // Real field name is `eval_duration` (nanoseconds) — this used to be
+    // named `eval_duration_ns`, which doesn't exist in Ollama's actual
+    // /api/generate response body. Since the field had no default, serde
+    // rejected every real (non-fixture) response as a deserialization
+    // error, silently breaking every live Ollama call while the
+    // hand-written unit test fixture (which used the wrong name too)
+    // stayed green. Found by actually exercising this against a running
+    // local Ollama instance rather than only the unit test's fixture JSON.
+    #[serde(default, rename = "eval_duration")]
     pub eval_duration_ns: u64,
 }
 
@@ -186,5 +199,66 @@ mod tests {
         let deserialized: ModelInfo = serde_json::from_str(&json).unwrap();
 
         assert_eq!(deserialized.name, "llama3.2:latest");
+    }
+
+    /// Regression test for a real bug: this struct used to declare a field
+    /// named `eval_duration_ns`, but Ollama's actual /api/generate response
+    /// (confirmed against a live local Ollama instance) calls it
+    /// `eval_duration` — so every real, non-streaming generate() call
+    /// failed to deserialize and errored out, even though
+    /// test_generate_response_serialization above stayed green (it
+    /// round-tripped the same wrong field name through both serialize and
+    /// deserialize, so it never caught the mismatch against Ollama's real
+    /// shape). This fixture is copied verbatim from a real
+    /// `curl localhost:11434/api/generate -d '{"stream": false, ...}'`
+    /// response.
+    #[test]
+    fn test_generate_response_parses_real_ollama_shape() {
+        let real_ollama_json = r#"{
+            "model": "qwen2.5:0.5b",
+            "created_at": "2026-08-12T06:07:35.425359Z",
+            "response": "The capital of France is Paris.",
+            "done": true,
+            "done_reason": "stop",
+            "context": [1, 2, 3],
+            "total_duration": 131312583,
+            "load_duration": 83500625,
+            "prompt_eval_count": 36,
+            "prompt_eval_duration": 14343000,
+            "eval_count": 8,
+            "eval_duration": 32424000
+        }"#;
+
+        let parsed: GenerateResponse = serde_json::from_str(real_ollama_json)
+            .expect("must deserialize a real Ollama /api/generate response");
+        assert_eq!(parsed.response, "The capital of France is Paris.");
+        assert_eq!(parsed.eval_count, 8);
+        assert_eq!(parsed.eval_duration_ns, 32424000);
+    }
+
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[tokio::test]
+    async fn test_generate_real_http_against_ollama_shaped_mock() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/generate"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(
+                r#"{"model":"qwen2.5:0.5b","response":"Paris.","done":true,"eval_count":3,"eval_duration":1500000}"#,
+                "application/json",
+            ))
+            .mount(&mock_server)
+            .await;
+
+        let client = OllamaClient::new(&mock_server.uri());
+        let response = client
+            .generate("qwen2.5:0.5b", "What is the capital of France?")
+            .await
+            .expect("mocked generate() should succeed");
+
+        assert_eq!(response.response, "Paris.");
+        assert_eq!(response.eval_count, 3);
     }
 }

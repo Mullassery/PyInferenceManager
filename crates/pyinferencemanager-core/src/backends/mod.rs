@@ -3,12 +3,14 @@ use std::collections::HashMap;
 
 pub mod anthropic_backend;
 pub mod colibri_backend;
+pub mod gemini_backend;
 pub mod ollama_backend;
 pub mod openai_backend;
 pub mod stub_backend;
 
 pub use anthropic_backend::AnthropicBackend;
 pub use colibri_backend::ColibriBackend;
+pub use gemini_backend::GeminiBackend;
 pub use ollama_backend::OllamaBackend;
 pub use openai_backend::OpenAiBackend;
 pub use stub_backend::StubBackend;
@@ -17,6 +19,7 @@ pub use stub_backend::StubBackend;
 pub enum BackendKind {
     Anthropic,
     OpenAi,
+    Gemini,
     Ollama,
     VLlm,
     TensorRtLlm,
@@ -29,6 +32,7 @@ impl BackendKind {
         match self {
             BackendKind::Anthropic => "anthropic",
             BackendKind::OpenAi => "openai",
+            BackendKind::Gemini => "gemini",
             BackendKind::Ollama => "ollama",
             BackendKind::VLlm => "vllm",
             BackendKind::TensorRtLlm => "tensorrt_llm",
@@ -99,6 +103,7 @@ pub trait RuntimeBackend: Send + Sync {
 pub enum AnyBackend {
     Anthropic(AnthropicBackend),
     OpenAi(OpenAiBackend),
+    Gemini(GeminiBackend),
     Ollama(OllamaBackend),
     VLlm(StubBackend),
     TensorRtLlm(StubBackend),
@@ -111,6 +116,7 @@ impl AnyBackend {
         match self {
             AnyBackend::Anthropic(b) => b.infer(request).await,
             AnyBackend::OpenAi(b) => b.infer(request).await,
+            AnyBackend::Gemini(b) => b.infer(request).await,
             AnyBackend::Ollama(b) => b.infer(request).await,
             AnyBackend::VLlm(b) => b.infer(request).await,
             AnyBackend::TensorRtLlm(b) => b.infer(request).await,
@@ -123,6 +129,7 @@ impl AnyBackend {
         match self {
             AnyBackend::Anthropic(b) => b.estimate_cost(profile),
             AnyBackend::OpenAi(b) => b.estimate_cost(profile),
+            AnyBackend::Gemini(b) => b.estimate_cost(profile),
             AnyBackend::Ollama(b) => b.estimate_cost(profile),
             AnyBackend::VLlm(b) => b.estimate_cost(profile),
             AnyBackend::TensorRtLlm(b) => b.estimate_cost(profile),
@@ -135,6 +142,7 @@ impl AnyBackend {
         match self {
             AnyBackend::Anthropic(b) => b.estimate_latency(profile),
             AnyBackend::OpenAi(b) => b.estimate_latency(profile),
+            AnyBackend::Gemini(b) => b.estimate_latency(profile),
             AnyBackend::Ollama(b) => b.estimate_latency(profile),
             AnyBackend::VLlm(b) => b.estimate_latency(profile),
             AnyBackend::TensorRtLlm(b) => b.estimate_latency(profile),
@@ -147,6 +155,7 @@ impl AnyBackend {
         match self {
             AnyBackend::Anthropic(b) => b.kind(),
             AnyBackend::OpenAi(b) => b.kind(),
+            AnyBackend::Gemini(b) => b.kind(),
             AnyBackend::Ollama(b) => b.kind(),
             AnyBackend::VLlm(b) => b.kind(),
             AnyBackend::TensorRtLlm(b) => b.kind(),

@@ -1,262 +1,121 @@
 #!/usr/bin/env python3
 """
-Retry Logic & Cost Estimation Example
+Budget Guardrails, Retry Configuration & Load Testing Example
 
-Demonstrates how PyInferenceManager handles:
-1. Automatic retries with exponential backoff
-2. Cost estimation before execution
-3. Provider health tracking
-4. Automatic failover to cheaper providers
+Demonstrates the real cost/reliability controls exposed on
+`pyinferencemanager.Orchestrator`:
+  1. configure_budget() / budget_status() — real spend caps enforced on
+     every cloud call made through run().
+  2. configure_retry() — real retry/backoff policy used when a cloud call
+     fails with a retryable error (429/408/5xx).
+  3. run_load_test() — a synthetic load generator that exercises the same
+     budget-enforcement and dynamic-routing logic run() uses, at a volume
+     that would be impractical against live provider APIs. Latencies/costs
+     in the load test are simulated, NOT real network calls.
+  4. plan() — real cost/latency estimation before spending anything.
 """
 
-from pyinferencemanager import Orchestrator, OrchestratorConfig, ModelRegistry
-from pyinferencemanager import LocalModel, CloudModel, ExecutionMode
+from pyinferencemanager import Orchestrator
 
 
 def demonstrate_cost_estimation():
-    """Show cost estimation before task execution."""
     print("\n" + "=" * 70)
-    print("1. COST ESTIMATION BEFORE EXECUTION")
+    print("1. COST ESTIMATION BEFORE EXECUTION (plan())")
     print("=" * 70)
 
-    config = OrchestratorConfig(
-        mode=ExecutionMode.CLOUD_FIRST,
-        models=ModelRegistry(
-            cloud=[
-                CloudModel(
-                    provider="anthropic",
-                    model_id="claude-opus-4-1",
-                    cost_per_1k_input=0.003,
-                    cost_per_1k_output=0.015,
-                    context_length=200_000,
-                    priority=1,
-                ),
-                CloudModel(
-                    provider="openai",
-                    model_id="gpt-4o-mini",
-                    cost_per_1k_input=0.00015,
-                    cost_per_1k_output=0.0006,
-                    context_length=128_000,
-                    priority=2,
-                ),
-            ]
-        ),
+    orchestrator = Orchestrator(mode="cloud_first")
+
+    for label, task in [
+        ("Simple", "What is the capital of France?"),
+        ("Complex", "Analyze this legal document for risks: compare all clauses, "
+                     "identify contradictions, assess liability, and summarize concerns."),
+    ]:
+        plan = orchestrator.plan(task)
+        print(f"\n  {label} task:")
+        print(f"    Estimated cost:    ${plan.estimated_cost_usd:.6f}")
+        print(f"    Estimated latency: {plan.estimated_latency_ms}ms")
+        print(f"    Stages:            {plan.stages}")
+
+
+def demonstrate_budget_guardrails():
+    print("\n" + "=" * 70)
+    print("2. BUDGET GUARDRAILS (configure_budget() / budget_status())")
+    print("=" * 70)
+
+    orchestrator = Orchestrator(mode="cloud_first")
+    orchestrator.configure_budget(
+        max_cost_usd=0.50,
+        max_requests=100,
+        alert_threshold_percent=80.0,
+        enforce_hard_limit=True,
     )
 
-    orchestrator = Orchestrator(config=config)
+    print("\n  Configured: $0.50 hard cap, alert at 80% used")
+    status = orchestrator.budget_status()
+    print(f"  Initial status: {status}")
 
-    # Simple task: typically cheaper on OpenAI
-    simple_task = "What is the capital of France?"
-    print(f"\n📊 Simple Task (Low Complexity)")
-    print(f"   Query: {simple_task}")
-    print(f"   Estimated tokens: 30 input, 100 output")
-    print(f"   Cost breakdown:")
-    print(f"     • OpenAI: $0.00015 * 30/1000 + $0.0006 * 100/1000 = $0.000065")
-    print(f"     • Anthropic: $0.003 * 30/1000 + $0.015 * 100/1000 = $0.00165")
-    print(f"   Savings: 96.1% by choosing OpenAI")
+    result = orchestrator.run(task="question_answering", message="What is 2+2?")
+    print(f"\n  After one run(): cost=${result.total_cost_usd:.6f}")
+    print(f"  Budget status:   {orchestrator.budget_status()}")
 
-    # Complex task: typically needs Anthropic
-    complex_task = (
-        "Analyze this legal document for risks: compare all clauses, "
-        "identify contradictions, assess liability, and summarize key concerns."
+
+def demonstrate_retry_configuration():
+    print("\n" + "=" * 70)
+    print("3. RETRY / BACKOFF CONFIGURATION (configure_retry())")
+    print("=" * 70)
+
+    orchestrator = Orchestrator(mode="cloud_first")
+    orchestrator.configure_retry(
+        max_attempts=4,
+        backoff="exponential",
+        initial_ms=100,
+        max_ms=5000,
     )
-    print(f"\n📊 Complex Task (High Complexity)")
-    print(f"   Query: {complex_task[:60]}...")
-    print(f"   Estimated tokens: 500 input, 1000 output")
-    print(f"   Cost breakdown:")
-    print(f"     • OpenAI: $0.00015 * 500/1000 + $0.0006 * 1000/1000 = $0.00645")
-    print(f"     • Anthropic: $0.003 * 500/1000 + $0.015 * 1000/1000 = $0.0165")
-    print(f"   Trade-off: Anthropic is more capable but 2.56x more expensive")
+
+    print("\n  Configured: 4 attempts, exponential backoff, 100ms → 5000ms cap")
+    print("  This policy is used automatically inside run() whenever a real cloud")
+    print("  call fails with a retryable error (HTTP 429 rate-limit, 408 timeout, ")
+    print("  or 5xx server error) — non-retryable errors (e.g. 401 bad key) fail fast.")
 
 
-def demonstrate_retry_mechanism():
-    """Show automatic retry with exponential backoff."""
+def demonstrate_load_test():
     print("\n" + "=" * 70)
-    print("2. AUTOMATIC RETRY WITH EXPONENTIAL BACKOFF")
+    print("4. SYNTHETIC LOAD TEST (run_load_test())")
     print("=" * 70)
+    print("\n  NOTE: this exercises real budget-enforcement + dynamic-routing logic")
+    print("  at volume, but request latencies/costs are simulated — not real network")
+    print("  calls to any provider.")
 
-    print("\n🔄 Retry Configuration: Max 3 attempts")
-    print("   Backoff Strategy: Exponential")
-    print("   Initial delay: 100ms")
-    print("   Max delay: 5000ms (5 seconds)")
+    orchestrator = Orchestrator(mode="cloud_first")
+    result = orchestrator.run_load_test(num_requests=200, budget_usd=5.0)
 
-    print("\n📈 Backoff Timeline:")
-    delays = [100, 200, 400]  # exponential: 100 * 2^n
-    total_delay = 0
-    for attempt, delay in enumerate(delays):
-        total_delay += delay
-        print(f"   Attempt {attempt}: Wait {delay}ms → Cumulative: {total_delay}ms")
-
-    print("\n✅ Retry Logic Flow:")
-    print("   1. First attempt on primary provider (Anthropic)")
-    print("   2. If fails with retriable error (429, 408, 5xx):")
-    print("      └─ Wait 100ms → Retry on same provider")
-    print("   3. If still fails:")
-    print("      └─ Wait 200ms → Try secondary provider (OpenAI)")
-    print("   4. If still fails:")
-    print("      └─ Wait 400ms → Try local LLM")
-    print("   5. If all exhausted → Return error")
-
-
-def demonstrate_provider_health():
-    """Show provider health tracking."""
-    print("\n" + "=" * 70)
-    print("3. PROVIDER HEALTH TRACKING")
-    print("=" * 70)
-
-    print("\n🏥 Provider Status Transitions:")
-    print("   Healthy (✓)")
-    print("   ├─ Success rate >= 80%")
-    print("   ├─ No consecutive failures")
-    print("   │")
-    print("   └─→ Degraded (⚠️)")
-    print("       ├─ Success rate < 80%")
-    print("       ├─ 1+ consecutive failures")
-    print("       │")
-    print("       └─→ Unavailable (✗)")
-    print("           └─ 3+ consecutive failures")
-
-    print("\n📊 Example Scenario:")
-    print("   Request 1: Anthropic fails (429 rate limit)")
-    print("     Status: Degraded | Healthy providers: OpenAI")
-    print("   Request 2: Anthropic succeeds")
-    print("     Status: Still Degraded (need > 80% success rate)")
-    print("   Requests 3-10: Anthropic succeeds (9/10 = 90%)")
-    print("     Status: Back to Healthy ✓")
-
-
-def demonstrate_fallback_strategy():
-    """Show multi-provider fallback strategy."""
-    print("\n" + "=" * 70)
-    print("4. MULTI-PROVIDER FALLBACK STRATEGY")
-    print("=" * 70)
-
-    print("\n🔗 Fallback Chain (Priority Order):")
-    print("   1. Anthropic (priority=1)")
-    print("      • Most capable model")
-    print("      • Best for complex tasks")
-    print("      • Higher cost")
-    print("   ↓ (if unavailable or fails)")
-    print("   2. OpenAI (priority=2)")
-    print("      • Fast and cost-efficient")
-    print("      • Good for simple tasks")
-    print("      • Lower cost")
-    print("   ↓ (if both cloud fails)")
-    print("   3. Local LLM (fallback)")
-    print("      • No API calls needed")
-    print("      • Fastest (no network latency)")
-    print("      • Private (no data sent out)")
-
-
-def demonstrate_cost_savings():
-    """Show cumulative cost savings."""
-    print("\n" + "=" * 70)
-    print("5. COST SAVINGS ANALYSIS")
-    print("=" * 70)
-
-    tasks = [
-        ("simple", "What is X?", 0.1, 0.000065),
-        ("medium", "Summarize document", 0.5, 0.005),
-        ("complex", "Analyze and compare", 0.8, 0.0165),
-        ("simple", "List items", 0.1, 0.000065),
-        ("complex", "Root cause analysis", 0.85, 0.0165),
-    ]
-
-    total_cost_multi = 0.0
-    total_cost_anthropic = 0.0
-
-    print("\n📋 Task Execution Log:")
-    print(f"{'#':<3} {'Type':<10} {'Routed To':<15} {'Cost':<12} {'Saved vs Single':<15}")
-    print("-" * 70)
-
-    for i, (task_type, _, complexity, cost) in enumerate(tasks, 1):
-        provider = "OpenAI" if complexity < 0.6 else "Anthropic"
-        anthropic_cost = cost * 25  # Approximate: Anthropic is ~25x for simple tasks
-        savings = anthropic_cost - cost
-
-        total_cost_multi += cost
-        total_cost_anthropic += anthropic_cost
-
-        print(
-            f"{i:<3} {task_type:<10} {provider:<15} "
-            f"${cost:<11.6f} ${savings:<14.6f}"
-        )
-
-    total_savings = total_cost_anthropic - total_cost_multi
-    savings_pct = (total_savings / total_cost_anthropic) * 100
-
-    print("-" * 70)
-    print(f"{'TOTAL':<23} ${total_cost_multi:<11.6f} "
-          f"${total_savings:<14.6f} ({savings_pct:.1f}%)")
-
-
-def demonstrate_real_world_scenario():
-    """Show real-world usage scenario."""
-    print("\n" + "=" * 70)
-    print("6. REAL-WORLD SCENARIO: DOCUMENT PROCESSING PIPELINE")
-    print("=" * 70)
-
-    print("\n📁 Pipeline: Process 3 customer support documents")
-    print("   Doc 1: Simple FAQ (100 words)")
-    print("   Doc 2: Complaint letter (500 words)")
-    print("   Doc 3: Contract review (5000 words)")
-
-    print("\n🚀 Execution with Multi-Provider Routing:")
-    print("\n   📄 Doc 1 (FAQ):")
-    print("      Complexity: 0.2 (low)")
-    print("      Router: → OpenAI ($0.0001)")
-    print("      Health: Anthropic (Healthy), OpenAI (Healthy)")
-    print("      Result: ✓ Success in 500ms")
-
-    print("\n   📄 Doc 2 (Complaint):")
-    print("      Complexity: 0.5 (medium)")
-    print("      Router: → OpenAI ($0.005)")
-    print("      Health: Anthropic (Degraded), OpenAI (Healthy)")
-    print("      Result: ✓ Success in 800ms (skipped degraded Anthropic)")
-
-    print("\n   📄 Doc 3 (Contract):")
-    print("      Complexity: 0.9 (high)")
-    print("      Router: → Anthropic (primary) ($0.017)")
-    print("      Health: Anthropic (Healthy), OpenAI (Healthy)")
-    print("      Attempt 1: ✗ Anthropic fails (rate limit 429)")
-    print("      Retry: Wait 100ms → Retry Anthropic ($0.017)")
-    print("      Attempt 2: ✓ Success in 2.5s")
-
-    print("\n💰 Total Cost:")
-    print("      Doc 1: $0.0001")
-    print("      Doc 2: $0.005")
-    print("      Doc 3: $0.034 (2x due to retry)")
-    print("      ───────────────")
-    print("      Total: $0.0391")
-    print("      vs Single Provider (all Anthropic): $0.056")
-    print("      Savings: 30% ($0.0169)")
+    print(f"\n  Total requests:        {result['total_requests']}")
+    print(f"  Successful:            {result['successful_requests']}")
+    print(f"  Failed (budget/other): {result['failed_requests']}")
+    print(f"  Success rate:          {result['success_rate']:.1f}%")
+    print(f"  Simulated total cost:  ${result['total_cost_usd']:.4f}")
+    print(f"  Budget used:           {result['budget_used_percent']:.1f}%")
+    print(f"  p95 / p99 latency:     {result['p95_latency_ms']}ms / {result['p99_latency_ms']}ms")
+    print(f"  Dynamic routing changes: {result['dynamic_routing_changes']}")
 
 
 if __name__ == "__main__":
     print("\n" + "=" * 70)
-    print("PyInferenceManager — Retry Logic & Cost Estimation Demo")
+    print("PyInferenceManager — Budget, Retry & Load Testing Demo")
     print("=" * 70)
 
-    try:
-        demonstrate_cost_estimation()
-        demonstrate_retry_mechanism()
-        demonstrate_provider_health()
-        demonstrate_fallback_strategy()
-        demonstrate_cost_savings()
-        demonstrate_real_world_scenario()
+    demonstrate_cost_estimation()
+    demonstrate_budget_guardrails()
+    demonstrate_retry_configuration()
+    demonstrate_load_test()
 
-        print("\n" + "=" * 70)
-        print("✅ All demonstrations complete!")
-        print("=" * 70)
-        print("\n🎯 Key Takeaways:")
-        print("   1. Pre-execution cost estimation prevents surprises")
-        print("   2. Automatic retries with backoff improve reliability")
-        print("   3. Provider health tracking enables smart failover")
-        print("   4. Multi-provider routing saves 30-90% on costs")
-        print("   5. Zero developer overhead — all automatic!")
-
-    except Exception as e:
-        print(f"\n✗ Error: {e}")
-        print("  Note: This demo is simulated. In production:")
-        print("  - Set ANTHROPIC_API_KEY and OPENAI_API_KEY env vars")
-        print("  - Ensure Ollama running locally (if using local models)")
+    print("\n" + "=" * 70)
+    print("Done.")
+    print("=" * 70)
+    print("\nKey takeaways:")
+    print("  1. plan() estimates cost/latency before you spend anything")
+    print("  2. configure_budget() enforces a real hard/soft spend cap on run()")
+    print("  3. configure_retry() controls real retry/backoff on retryable errors")
+    print("  4. run_load_test() stress-tests budget/routing logic without live spend")
+    print("\nNote: set ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY to exercise")
+    print("real cloud calls, or run Ollama locally for real local-model calls.")
