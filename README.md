@@ -114,6 +114,11 @@ The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) 
 - Rust core: `cargo test --workspace` (350+ tests, including HTTP-mocked request/response tests for every cloud client via [`wiremock`](https://docs.rs/wiremock)).
 - Python: `pytest tests/` — covers `Orchestrator.run/plan/provider_ranking`, the MCP tool handlers, budget/retry configuration, load testing, and MCP connector security defaults, all without requiring live API keys.
 
+## Known issues
+
+- `vllm`, `tensorrt_llm`, `mlc_llm`, and `colibri` backends are cost-estimator-only stubs (see [Providers](#providers)) — they do not make live inference calls yet.
+- No open GitHub issues and no `TODO`/`FIXME` markers in the codebase at the time of this writing.
+
 ## License
 
 Proprietary License — free to use with explicit attribution. See [LICENSE](LICENSE).
