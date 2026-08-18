@@ -49,7 +49,13 @@ Changelog = "https://github.com/Mullassery/pyinferencemanager/releases"
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "maturin>=1.0", "ruff>=0.5.0"]
 
 [tool.maturin]
-python-source = "."
+# src/ layout, not "." - a flat repo-root package directory of the same name
+# as the installed package shadows the real installed wheel for anything run
+# with the repo root as cwd (a well-known Python packaging footgun): both
+# `python -c "import pyinferencemanager"` and `pytest`'s own test collection
+# were picking up this source tree - which has no compiled _core - instead
+# of the actual installed wheel, well before this pass diagnosed it.
+python-source = "src"
 module-name = "pyinferencemanager._core"
 manifest-path = "crates/pyinferencemanager-py/Cargo.toml"
 
