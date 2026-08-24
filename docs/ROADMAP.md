@@ -31,6 +31,9 @@ None - v2.0.0 production-ready
 - [ ] Memory optimization (target <200MB)
 - [ ] Connection pooling
 
+#### Architecture (external critique, verified real gap)
+- [ ] Wire the live execution path onto the existing `RuntimeBackend` trait/`BackendRegistry` (`crates/pyinferencemanager-core/src/backends/mod.rs`) instead of the separate, closed `CloudProvider` enum (`types/dag.rs`, only 3 variants: Anthropic/OpenAI/Gemini) that's hand-matched throughout `orchestrator/provider_executor.rs`, `orchestrator/mod.rs`, `router/execution_router.rs`, and `router/multi_provider.rs`. Today, adding a provider means editing the enum plus every match site, not a config change — the "11+ providers, zero lock-in" positioning isn't backed by the wiring yet (only 3 cloud providers are actually live; others are `StubBackend`).
+
 ### 🟡 MEDIUM (Q3-Q4 2026)
 
 #### Features
