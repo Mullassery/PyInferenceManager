@@ -418,6 +418,11 @@ impl Orchestrator {
 /// when the caller hasn't registered explicit `CloudModelEntry` pricing.
 /// Used only as a fallback so cost reporting isn't silently always 0.0 in
 /// the common case of an unconfigured `ModelRegistry`.
+// The wildcard arm below is unreachable today (CloudProvider currently has
+// exactly the 3 named variants) but deliberately kept so that adding a new
+// CloudProvider variant later doesn't force an edit here just to compile --
+// it'll fall back to a conservative default automatically.
+#[allow(unreachable_patterns)]
 fn default_cost_per_1k_output(provider: &CloudProvider) -> f32 {
     match provider {
         CloudProvider::Anthropic { model } => match model.as_str() {
@@ -433,6 +438,7 @@ fn default_cost_per_1k_output(provider: &CloudProvider) -> f32 {
             "gemini-1.5-flash" => 0.0003,
             _ => 0.0003,
         },
+        _ => 0.001,
     }
 }
 

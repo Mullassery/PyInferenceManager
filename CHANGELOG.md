@@ -2,6 +2,28 @@
 
 All notable changes to PyInferenceManager are documented in this file.
 
+## [1.2.0] - 2026-08-26
+
+### Changed
+- **Cloud provider dispatch now goes through `BackendRegistry`/`RuntimeBackend`,
+  not a hand-matched `CloudProvider` enum.** `ProviderExecutor::execute` used
+  to match `CloudProvider` directly and call three private functions
+  (`execute_anthropic`/`execute_openai`/`execute_gemini`) that each
+  independently re-read an env var and re-constructed a client — duplicating
+  logic already correctly implemented by `AnthropicBackend`/`OpenAiBackend`/
+  `GeminiBackend`'s `RuntimeBackend::infer()`. `BackendRegistry` was
+  otherwise unused outside its own unit test. `CloudProvider::kind()`/
+  `::model()` (`types/dag.rs`) are now the one place a `CloudProvider`
+  variant maps to a `BackendKind`; `ProviderExecutor::execute` builds a real
+  `BackendRegistry`, registers the needed backend (same env var names and
+  error messages as before), and dispatches through `RuntimeBackend::infer`.
+  Verified end-to-end with a `wiremock`-backed test exercising the full
+  registry → backend → HTTP path.
+- `MultiProviderRouter::select_provider` and `default_cost_per_1k_output`
+  (the two other match sites that were exhaustiveness-forced over
+  `CloudProvider`) now have non-exhaustive fallback arms, so adding a new
+  `CloudProvider` variant no longer requires editing them just to compile.
+
 ## [1.1.1] - 2026-08-12
 
 First published release to PyPI. This release closes the gap between what

@@ -58,6 +58,7 @@ dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "maturin>=1.0", "ruff>=0.5.0"]
 python-source = "src"
 module-name = "pyinferencemanager._core"
 manifest-path = "crates/pyinferencemanager-py/Cargo.toml"
+include = ["LICENSE"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

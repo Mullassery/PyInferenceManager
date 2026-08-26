@@ -14,7 +14,10 @@ impl MultiProviderRouter {
                         return Some(model.provider.clone());
                     }
                 }
-                CloudProvider::OpenAI { .. } | CloudProvider::Gemini { .. } => {
+                // Every other provider (OpenAI, Gemini, and any future
+                // variant) is treated as a low-complexity default rather
+                // than requiring a new match arm here.
+                _ => {
                     if complexity <= 0.6 {
                         return Some(model.provider.clone());
                     }

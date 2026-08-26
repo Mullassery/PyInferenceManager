@@ -103,6 +103,8 @@ Real HTTP calls, with retry/backoff and cost tracking:
 
 Additionally, `vllm`, `tensorrt_llm`, `mlc_llm`, and `colibri` exist as **cost-estimator-only stubs** (`BackendKind`/`RuntimeBackend` trait implementations with real cost/latency estimation logic, but no live inference) — they're placeholders for self-hosted inference servers, not currently wired to make real calls. `orchestrator.available_backends()` lists all of these honestly, including the stubs.
 
+Cloud execution dispatches through `BackendRegistry`/`RuntimeBackend` (not a hand-matched provider enum): `ProviderExecutor::execute` maps a `CloudProvider` to its `BackendKind`, registers the one backend it needs (reading the API key from the env vars above), and calls it through the same `RuntimeBackend::infer` trait object every backend implements — so adding a new cloud provider is a new `BackendKind`/backend + one dispatch arm, not edits scattered across every call site that used to match the old enum.
+
 ## MCP tools
 
 `pyinferencemanager._mcp_tools.PyInferenceManagerMCPHandler` exposes 13 MCP-style tools (`list_available_models`, `execute_inference`, `estimate_inference_cost`, `get_provider_status`, etc.), all backed by a real `Orchestrator` instance — no hardcoded responses. See [`examples/mcp_pyinferencemanager.py`](examples/mcp_pyinferencemanager.py).

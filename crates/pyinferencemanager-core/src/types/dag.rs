@@ -1,3 +1,4 @@
+use crate::backends::BackendKind;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -20,10 +21,28 @@ pub enum CloudProvider {
 
 impl CloudProvider {
     pub fn key(&self) -> String {
+        format!("{}:{}", self.kind().as_str(), self.model())
+    }
+
+    /// The `BackendKind` this variant corresponds to in
+    /// `crate::backends::BackendRegistry` -- the single place a new
+    /// `CloudProvider` variant needs a match arm added. Callers that need
+    /// to dispatch by provider (execution, cost lookup, etc.) should go
+    /// through this + the registry rather than hand-matching `CloudProvider`
+    /// themselves.
+    pub fn kind(&self) -> BackendKind {
         match self {
-            CloudProvider::Anthropic { model } => format!("anthropic:{}", model),
-            CloudProvider::OpenAI { model } => format!("openai:{}", model),
-            CloudProvider::Gemini { model } => format!("gemini:{}", model),
+            CloudProvider::Anthropic { .. } => BackendKind::Anthropic,
+            CloudProvider::OpenAI { .. } => BackendKind::OpenAi,
+            CloudProvider::Gemini { .. } => BackendKind::Gemini,
+        }
+    }
+
+    pub fn model(&self) -> &str {
+        match self {
+            CloudProvider::Anthropic { model }
+            | CloudProvider::OpenAI { model }
+            | CloudProvider::Gemini { model } => model,
         }
     }
 }
@@ -166,6 +185,47 @@ impl Dag {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_cloud_provider_kind() {
+        assert_eq!(
+            CloudProvider::Anthropic {
+                model: "claude-haiku-4-5".to_string()
+            }
+            .kind(),
+            BackendKind::Anthropic
+        );
+        assert_eq!(
+            CloudProvider::OpenAI {
+                model: "gpt-4o-mini".to_string()
+            }
+            .kind(),
+            BackendKind::OpenAi
+        );
+        assert_eq!(
+            CloudProvider::Gemini {
+                model: "gemini-1.5-flash".to_string()
+            }
+            .kind(),
+            BackendKind::Gemini
+        );
+    }
+
+    #[test]
+    fn test_cloud_provider_model() {
+        let provider = CloudProvider::Anthropic {
+            model: "claude-opus-4-1".to_string(),
+        };
+        assert_eq!(provider.model(), "claude-opus-4-1");
+    }
+
+    #[test]
+    fn test_cloud_provider_key_matches_kind_and_model() {
+        let provider = CloudProvider::OpenAI {
+            model: "gpt-4o-mini".to_string(),
+        };
+        assert_eq!(provider.key(), "openai:gpt-4o-mini");
+    }
 
     #[test]
     fn test_dag_node_new() {

@@ -31,8 +31,12 @@ None - v2.0.0 production-ready
 - [ ] Memory optimization (target <200MB)
 - [ ] Connection pooling
 
-#### Architecture (external critique, verified real gap)
-- [ ] Wire the live execution path onto the existing `RuntimeBackend` trait/`BackendRegistry` (`crates/pyinferencemanager-core/src/backends/mod.rs`) instead of the separate, closed `CloudProvider` enum (`types/dag.rs`, only 3 variants: Anthropic/OpenAI/Gemini) that's hand-matched throughout `orchestrator/provider_executor.rs`, `orchestrator/mod.rs`, `router/execution_router.rs`, and `router/multi_provider.rs`. Today, adding a provider means editing the enum plus every match site, not a config change — the "11+ providers, zero lock-in" positioning isn't backed by the wiring yet (only 3 cloud providers are actually live; others are `StubBackend`).
+#### Architecture (external critique, verified real gap) — Done
+`ProviderExecutor::execute` (`orchestrator/provider_executor.rs`) used to hand-match `CloudProvider` and call three private functions (`execute_anthropic`/`execute_openai`/`execute_gemini`) that each independently re-read an env var and re-constructed a client — duplicating logic already correctly encapsulated in `AnthropicBackend`/`OpenAiBackend`/`GeminiBackend`'s `RuntimeBackend::infer()`. `BackendRegistry` (`crates/pyinferencemanager-core/src/backends/mod.rs`) was otherwise unused outside its own unit test. Fixed:
+- `CloudProvider::kind()`/`::model()` (`types/dag.rs`) are now the single place a `CloudProvider` variant maps to a `BackendKind` and a model string; `CloudProvider::key()` derives from them.
+- `ProviderExecutor::execute` now builds a real `BackendRegistry`, registers the one `RuntimeBackend` it needs via `register_backend` (env-var-sourced API key, same env var names and error messages as before), and dispatches through `AnyBackend::infer`. Verified end-to-end with a `wiremock`-backed test that exercises the full registry → `AnthropicBackend` → `CloudClient` → HTTP path.
+- `MultiProviderRouter::select_provider` (`router/multi_provider.rs`) and `default_cost_per_1k_output` (`orchestrator/mod.rs`) — the two other genuinely exhaustiveness-forced match sites — now have non-exhaustive fallback arms, so a new `CloudProvider` variant no longer forces edits there to keep compiling.
+- `router/execution_router.rs`'s provider-construction sites were left as-is: those are routing-policy decisions (which provider to route a complexity tier to), not exhaustiveness-forced dispatch, and don't block extensibility the way the above did.
 
 ### 🟡 MEDIUM (Q3-Q4 2026)
 
