@@ -1,5 +1,10 @@
 use super::{BackendKind, InferenceRequest, InferenceResult, ModelProfile, RuntimeBackend};
 
+/// Placeholder `RuntimeBackend` for runtimes that don't have a real client
+/// implementation yet. `BackendKind::VLlm` used to be one of these -- it now
+/// has a real implementation in `vllm_backend::VLlmBackend` (see
+/// `AnyBackend::VLlm` in `mod.rs`), so it's no longer constructed with this
+/// stub. Only `TensorRtLlm` and `MlcLlm` remain genuinely unimplemented.
 pub struct StubBackend {
     kind: BackendKind,
 }
@@ -22,15 +27,6 @@ impl RuntimeBackend for StubBackend {
     fn estimate_cost(&self, profile: &ModelProfile) -> f32 {
         let size_gb = profile.size_gb();
         match self.kind {
-            BackendKind::VLlm => {
-                if size_gb < 20.0 {
-                    0.0
-                } else if size_gb < 50.0 {
-                    0.00001
-                } else {
-                    0.00002
-                }
-            }
             BackendKind::TensorRtLlm => {
                 if size_gb < 20.0 {
                     0.0
@@ -52,10 +48,6 @@ impl RuntimeBackend for StubBackend {
     fn estimate_latency(&self, profile: &ModelProfile) -> u64 {
         let size_gb = profile.size_gb();
         match self.kind {
-            BackendKind::VLlm => {
-                let base = (size_gb * 30.0) as u64;
-                base.max(200).min(30000)
-            }
             BackendKind::TensorRtLlm => {
                 let base = (size_gb * 20.0) as u64;
                 base.max(150).min(20000)
@@ -79,7 +71,7 @@ mod tests {
 
     #[test]
     fn test_stub_backend_infer_returns_error() {
-        let backend = StubBackend::new(BackendKind::VLlm);
+        let backend = StubBackend::new(BackendKind::TensorRtLlm);
         let request = InferenceRequest {
             model: "model".to_string(),
             prompt: "test".to_string(),
@@ -93,23 +85,21 @@ mod tests {
 
     #[test]
     fn test_stub_backend_kind() {
-        let vllm = StubBackend::new(BackendKind::VLlm);
         let trt = StubBackend::new(BackendKind::TensorRtLlm);
         let mlc = StubBackend::new(BackendKind::MlcLlm);
 
-        assert_eq!(vllm.kind(), BackendKind::VLlm);
         assert_eq!(trt.kind(), BackendKind::TensorRtLlm);
         assert_eq!(mlc.kind(), BackendKind::MlcLlm);
     }
 
     #[test]
     fn test_stub_backend_estimate_cost() {
-        let vllm = StubBackend::new(BackendKind::VLlm);
+        let trt = StubBackend::new(BackendKind::TensorRtLlm);
         let small = ModelProfile::new(10 * 1_073_741_824, "model".to_string());
         let large = ModelProfile::new(60 * 1_073_741_824, "model".to_string());
 
-        let small_cost = vllm.estimate_cost(&small);
-        let large_cost = vllm.estimate_cost(&large);
+        let small_cost = trt.estimate_cost(&small);
+        let large_cost = trt.estimate_cost(&large);
 
         assert!(small_cost <= large_cost);
     }

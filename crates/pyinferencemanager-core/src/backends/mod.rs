@@ -7,6 +7,7 @@ pub mod gemini_backend;
 pub mod ollama_backend;
 pub mod openai_backend;
 pub mod stub_backend;
+pub mod vllm_backend;
 
 pub use anthropic_backend::AnthropicBackend;
 pub use colibri_backend::ColibriBackend;
@@ -14,6 +15,7 @@ pub use gemini_backend::GeminiBackend;
 pub use ollama_backend::OllamaBackend;
 pub use openai_backend::OpenAiBackend;
 pub use stub_backend::StubBackend;
+pub use vllm_backend::VLlmBackend;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum BackendKind {
@@ -105,7 +107,7 @@ pub enum AnyBackend {
     OpenAi(OpenAiBackend),
     Gemini(GeminiBackend),
     Ollama(OllamaBackend),
-    VLlm(StubBackend),
+    VLlm(VLlmBackend),
     TensorRtLlm(StubBackend),
     MlcLlm(StubBackend),
     Colibri(ColibriBackend),

@@ -5,6 +5,9 @@ pub enum Error {
     #[error("Ollama error: {0}")]
     OllamaError(String),
 
+    #[error("vLLM error: {0}")]
+    VLlmError(String),
+
     #[error("Cloud error: {0}")]
     CloudError(String),
 

@@ -294,6 +294,19 @@ impl Orchestrator {
     /// retries with backoff up to `max_attempts` before giving up. On
     /// success, records the observed cost against the budget and updates
     /// provider health / dynamic routing metrics.
+    ///
+    /// Each individual attempt is wrapped in a hard `provider_timeout`
+    /// (`tokio::time::timeout`) so a hung/slow API call can't block this
+    /// loop indefinitely — a timeout counts as a failure for provider
+    /// health tracking exactly like any other error.
+    ///
+    /// Before every attempt (including the first), this also checks
+    /// `ProviderHealth::try_acquire_trial` for the target provider. If the
+    /// provider's circuit breaker is open (`Unavailable` and its cooldown
+    /// hasn't elapsed yet), or it's `HalfOpen` with its single recovery
+    /// trial already claimed by another in-flight call, this aborts
+    /// immediately instead of burning through backoff sleeps retrying a
+    /// provider that health tracking has already given up on mid-loop.
     pub async fn execute_cloud_with_retry(
         &self,
         provider: CloudProvider,
@@ -308,9 +321,17 @@ impl Orchestrator {
 
         let canonical_key = provider.key();
         let retry_config = self.retry_config_snapshot();
+        let provider_timeout = retry_config.provider_timeout;
         let mut retry_state = crate::optimizer::RetryState::new(retry_config);
 
         loop {
+            if !self.provider_health.try_acquire_trial(&canonical_key) {
+                return Err(crate::Error::CloudError(format!(
+                    "Provider {} circuit breaker is open; aborting instead of retrying",
+                    canonical_key
+                )));
+            }
+
             let request = ProviderExecutionRequest {
                 provider: provider.clone(),
                 prompt: prompt.clone(),
@@ -319,7 +340,26 @@ impl Orchestrator {
 
             let start = std::time::Instant::now();
 
-            match ProviderExecutor::execute(request).await {
+            let outcome = tokio::time::timeout(provider_timeout, ProviderExecutor::execute(request)).await;
+
+            // Track whether this attempt failed because of our own hard
+            // timeout (no HTTP status code to extract in that case) versus
+            // a real error returned by the provider call itself, so the
+            // retryability check below can gate it on `retry_on_timeout`
+            // like a genuine 408 rather than falling through to
+            // "not retryable" for lack of a status code.
+            let (result, timed_out) = match outcome {
+                Ok(inner) => (inner, false),
+                Err(_elapsed) => (
+                    Err(crate::Error::CloudError(format!(
+                        "Provider {} timed out after {:?}",
+                        canonical_key, provider_timeout
+                    ))),
+                    true,
+                ),
+            };
+
+            match result {
                 Ok(result) => {
                     let elapsed_ms = start.elapsed().as_millis() as u64;
                     let cost = self.calculate_provider_cost(&provider, result.tokens_used);
@@ -345,11 +385,32 @@ impl Orchestrator {
                         router.update_performance(&canonical_key, false, elapsed_ms, 0.0);
                     }
 
-                    let status_code = ErrorClassifier::extract_status_code(&e.to_string());
+                    // A timeout has no HTTP status code to extract; treat it
+                    // like the classic "408 Request Timeout" retryable case
+                    // (gated by the same `retry_on_timeout` config a real
+                    // 408 would be) rather than silently falling through to
+                    // "not retryable".
+                    let status_code = if timed_out {
+                        Some(408)
+                    } else {
+                        ErrorClassifier::extract_status_code(&e.to_string())
+                    };
                     let retryable = retry_state.config.is_retryable_error(status_code);
 
                     if !retryable || !retry_state.advance() {
                         return Err(e);
+                    }
+
+                    // Re-check health right before sleeping/retrying too:
+                    // if this failure was the one that just tripped the
+                    // breaker (3rd consecutive failure), don't bother
+                    // sleeping out a backoff window only to abort on the
+                    // next loop iteration's `try_acquire_trial` check.
+                    if !self.provider_health.try_acquire_trial(&canonical_key) {
+                        return Err(crate::Error::CloudError(format!(
+                            "Provider {} circuit breaker opened after this failure; aborting instead of retrying",
+                            canonical_key
+                        )));
                     }
 
                     tokio::time::sleep(retry_state.next_backoff).await;
@@ -659,5 +720,122 @@ mod tests {
             .await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Budget"));
+    }
+
+    // These tests mutate process-wide ANTHROPIC_API_KEY/ANTHROPIC_BASE_URL
+    // env vars (same pattern as engines::cloud_client's and
+    // orchestrator::provider_executor's tests), so they're serialized
+    // against each other and against those other suites via serial_test's
+    // shared default lock.
+    use crate::optimizer::BackoffStrategy;
+    use serial_test::serial;
+    use std::time::Duration as StdDuration;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[tokio::test]
+    #[serial]
+    async fn test_execute_cloud_with_retry_aborts_once_circuit_trips_instead_of_exhausting_max_attempts(
+    ) {
+        let mock_server = MockServer::start().await;
+
+        // Every call fails with a retryable 500 -- with max_attempts=5 the
+        // old behavior would keep hammering this same provider for all 5
+        // attempts. The circuit breaker trips to Unavailable after the 3rd
+        // consecutive failure, so the fixed retry loop should re-check
+        // health before attempt 4 and abort instead of making 2 more
+        // pointless calls.
+        Mock::given(method("POST"))
+            .and(path("/v1/messages"))
+            .respond_with(ResponseTemplate::new(500).set_body_string("internal error"))
+            .mount(&mock_server)
+            .await;
+
+        std::env::set_var("ANTHROPIC_API_KEY", "test-key");
+        std::env::set_var("ANTHROPIC_BASE_URL", mock_server.uri());
+
+        let orchestrator = Orchestrator::new(OrchestratorConfig::default()).await.unwrap();
+        orchestrator.set_retry_config(
+            RetryConfig::new(5).with_backoff(BackoffStrategy::Fixed { delay_ms: 1 }),
+        );
+
+        let provider = CloudProvider::Anthropic {
+            model: "claude-haiku-4-5".to_string(),
+        };
+        let result = orchestrator
+            .execute_cloud_with_retry(provider, "hi".to_string(), 100)
+            .await;
+
+        let received = mock_server.received_requests().await.unwrap();
+
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        std::env::remove_var("ANTHROPIC_BASE_URL");
+
+        assert!(result.is_err());
+        // Exactly 3 real HTTP calls: the loop must not have tried a 4th or
+        // 5th time after the breaker opened.
+        assert_eq!(received.len(), 3);
+        assert_eq!(
+            orchestrator.provider_health().get_status("anthropic:claude-haiku-4-5"),
+            Some(crate::engines::ProviderStatus::Unavailable)
+        );
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .to_lowercase()
+            .contains("circuit breaker"));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_execute_cloud_with_retry_times_out_hung_provider_and_records_failure() {
+        let mock_server = MockServer::start().await;
+
+        // Responds successfully, but only after a delay far longer than the
+        // configured provider_timeout -- simulates a hung/slow API call.
+        Mock::given(method("POST"))
+            .and(path("/v1/messages"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(serde_json::json!({
+                        "content": [{"type": "text", "text": "too slow"}],
+                        "usage": {"input_tokens": 1, "output_tokens": 1},
+                        "stop_reason": "end_turn"
+                    }))
+                    .set_delay(StdDuration::from_millis(300)),
+            )
+            .mount(&mock_server)
+            .await;
+
+        std::env::set_var("ANTHROPIC_API_KEY", "test-key");
+        std::env::set_var("ANTHROPIC_BASE_URL", mock_server.uri());
+
+        let orchestrator = Orchestrator::new(OrchestratorConfig::default()).await.unwrap();
+        orchestrator.set_retry_config(
+            RetryConfig::new(1).with_provider_timeout(StdDuration::from_millis(50)),
+        );
+
+        let provider = CloudProvider::Anthropic {
+            model: "claude-haiku-4-5".to_string(),
+        };
+        let result = orchestrator
+            .execute_cloud_with_retry(provider, "hi".to_string(), 100)
+            .await;
+
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        std::env::remove_var("ANTHROPIC_BASE_URL");
+
+        let err = result.expect_err("hung provider call must fail via timeout, not hang forever");
+        assert!(err.to_string().to_lowercase().contains("timed out"));
+
+        let metrics = orchestrator
+            .provider_health()
+            .get_metrics("anthropic:claude-haiku-4-5")
+            .expect("timeout must be recorded as a health failure");
+        // max_attempts=1 permits one retry on top of the initial attempt
+        // (see RetryState::can_retry), and every attempt here times out --
+        // so both count as health failures.
+        assert_eq!(metrics.failure_count, 2);
+        assert_eq!(metrics.consecutive_failures, 2);
     }
 }

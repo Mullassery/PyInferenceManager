@@ -100,8 +100,9 @@ Real HTTP calls, with retry/backoff and cost tracking:
 | OpenAI | `OPENAI_API_KEY` | `gpt-4o-mini` |
 | Google Gemini | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | `gemini-1.5-flash` |
 | Ollama (local) | — | whatever models you've pulled locally |
+| vLLM (local) | — | OpenAI-compatible endpoint, default `localhost:8000` |
 
-Additionally, `vllm`, `tensorrt_llm`, `mlc_llm`, and `colibri` exist as **cost-estimator-only stubs** (`BackendKind`/`RuntimeBackend` trait implementations with real cost/latency estimation logic, but no live inference) — they're placeholders for self-hosted inference servers, not currently wired to make real calls. `orchestrator.available_backends()` lists all of these honestly, including the stubs.
+Additionally, `tensorrt_llm`, `mlc_llm`, and `colibri` exist as **cost-estimator-only stubs** (`BackendKind`/`RuntimeBackend` trait implementations with real cost/latency estimation logic, but no live inference) — they're placeholders for self-hosted inference servers, not currently wired to make real calls. `orchestrator.available_backends()` lists all of these honestly, including the stubs.
 
 Cloud execution dispatches through `BackendRegistry`/`RuntimeBackend` (not a hand-matched provider enum): `ProviderExecutor::execute` maps a `CloudProvider` to its `BackendKind`, registers the one backend it needs (reading the API key from the env vars above), and calls it through the same `RuntimeBackend::infer` trait object every backend implements — so adding a new cloud provider is a new `BackendKind`/backend + one dispatch arm, not edits scattered across every call site that used to match the old enum.
 
@@ -118,7 +119,7 @@ The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) 
 
 ## Known issues
 
-- `vllm`, `tensorrt_llm`, `mlc_llm`, and `colibri` backends are cost-estimator-only stubs (see [Providers](#providers)) — they do not make live inference calls yet.
+- `tensorrt_llm`, `mlc_llm`, and `colibri` backends are cost-estimator-only stubs (see [Providers](#providers)) — they do not make live inference calls yet. `vllm` was a stub too as of 1.2.0 but is now a real backend.
 - No open GitHub issues and no `TODO`/`FIXME` markers in the codebase at the time of this writing.
 
 ## License

@@ -42,7 +42,19 @@ pub struct RetryConfig {
     pub backoff_strategy: BackoffStrategy,
     pub retry_on_timeout: bool,
     pub retry_on_rate_limit: bool,
+    /// Hard wall-clock timeout wrapped (via `tokio::time::timeout`) around
+    /// each individual provider execution attempt. Protects against a
+    /// hung/slow API call blocking a worker indefinitely -- risking
+    /// thread-pool exhaustion during a cascading outage -- instead of
+    /// relying on the provider to ever respond. Expiry is treated as a
+    /// failure for provider-health tracking, same as any other error.
+    pub provider_timeout: Duration,
 }
+
+/// Default per-attempt provider call timeout. Generous enough for a real,
+/// reachable LLM API under normal load, short enough that a genuinely hung
+/// connection doesn't tie up a retry loop for minutes.
+pub const DEFAULT_PROVIDER_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl RetryConfig {
     pub fn new(max_attempts: u32) -> Self {
@@ -51,6 +63,7 @@ impl RetryConfig {
             backoff_strategy: BackoffStrategy::default(),
             retry_on_timeout: true,
             retry_on_rate_limit: true,
+            provider_timeout: DEFAULT_PROVIDER_TIMEOUT,
         }
     }
 
@@ -66,6 +79,12 @@ impl RetryConfig {
 
     pub fn with_rate_limit_retry(mut self, enabled: bool) -> Self {
         self.retry_on_rate_limit = enabled;
+        self
+    }
+
+    /// Override the per-attempt provider call timeout (default 30s).
+    pub fn with_provider_timeout(mut self, timeout: Duration) -> Self {
+        self.provider_timeout = timeout;
         self
     }
 
@@ -163,6 +182,13 @@ mod tests {
         assert_eq!(config.max_attempts, 3);
         assert!(config.retry_on_timeout);
         assert!(config.retry_on_rate_limit);
+        assert_eq!(config.provider_timeout, Duration::from_secs(30));
+    }
+
+    #[test]
+    fn test_retry_config_with_provider_timeout() {
+        let config = RetryConfig::new(3).with_provider_timeout(Duration::from_millis(500));
+        assert_eq!(config.provider_timeout, Duration::from_millis(500));
     }
 
     #[test]

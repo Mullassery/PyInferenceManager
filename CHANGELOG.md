@@ -2,6 +2,27 @@
 
 All notable changes to PyInferenceManager are documented in this file.
 
+## [1.3.0] - 2026-08-30
+
+### Added
+- **Real vLLM backend.** `BackendKind::VLlm` was previously a cost/latency
+  estimation stub only (`backends/stub_backend.rs`), with no live inference
+  calls. Adds `backends/vllm_backend.rs` + `engines/vllm_client.rs`, a real
+  `RuntimeBackend` implementation hitting vLLM's OpenAI-compatible HTTP API,
+  mirroring the existing Ollama backend's pattern.
+
+### Fixed
+- **Circuit breaker was soft/delayed, not fast/hard.** `provider_health.rs`
+  tripped a provider to Unavailable after 3 consecutive failures, but
+  `execute_with_retry` could still retry the *same* provider before that
+  status took effect, there was no timeout wrapping `ProviderExecutor::execute`
+  (a hung call couldn't be force-aborted), and there was no auto-recovery —
+  once tripped, a provider stayed Unavailable until a manual `reset()`. Now:
+  each provider call is wrapped in a timeout that counts as a failure on
+  expiry, the retry loop re-checks health before each attempt and fails over
+  instead of retrying an Unavailable provider, and a half-open recovery
+  mechanism allows one trial request through after a cooldown.
+
 ## [1.2.0] - 2026-08-26
 
 ### Changed

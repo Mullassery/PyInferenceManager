@@ -135,6 +135,10 @@ pub struct OrchestratorConfig {
     pub cache_ttl_seconds: u64,
     pub auto_pull_missing_models: bool,
     pub ollama_base_url: String,
+    /// Base URL for a self-hosted vLLM server's OpenAI-compatible API (see
+    /// `backends::VLlmBackend` / `engines::VLlmClient`). Defaults to vLLM's
+    /// default `vllm serve` port, mirroring `ollama_base_url`.
+    pub vllm_base_url: String,
     pub db_path: String,
 }
 
@@ -149,6 +153,7 @@ impl Default for OrchestratorConfig {
             cache_ttl_seconds: 3600,
             auto_pull_missing_models: true,
             ollama_base_url: "http://localhost:11434".to_string(),
+            vllm_base_url: "http://localhost:8000".to_string(),
             db_path: "~/.pyinferencemanager/cache.db".to_string(),
         }
     }

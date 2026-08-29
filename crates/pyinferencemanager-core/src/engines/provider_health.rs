@@ -2,11 +2,24 @@ use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+/// Default cooldown before a tripped (`Unavailable`) provider is offered a
+/// half-open trial request. Kept short relative to typical outage
+/// durations so a provider that recovers quickly isn't stuck skipped for
+/// long, while still giving a genuinely down provider room to breathe
+/// instead of being hammered every retry.
+pub const DEFAULT_COOLDOWN_SECONDS: i64 = 30;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProviderStatus {
     Healthy,
     Degraded,
     Unavailable,
+    /// The circuit has been open (`Unavailable`) for at least the cooldown
+    /// duration. Exactly one trial request is allowed through to probe
+    /// recovery -- see `ProviderHealth::try_acquire_trial`. Treated the
+    /// same as `Degraded`/`Healthy` by anything that just checks
+    /// "is this provider available", since it's `!= Unavailable`.
+    HalfOpen,
 }
 
 #[derive(Debug, Clone)]
@@ -18,6 +31,11 @@ pub struct ProviderHealthMetrics {
     pub success_count: u32,
     pub failure_count: u32,
     pub total_requests: u32,
+    /// Set once a half-open trial request has been claimed by a caller, so
+    /// concurrent callers don't all pile a request onto a provider that
+    /// just tripped the breaker. Cleared on the next recorded
+    /// success/failure (which resolves the trial one way or the other).
+    trial_claimed: bool,
 }
 
 impl ProviderHealthMetrics {
@@ -30,6 +48,7 @@ impl ProviderHealthMetrics {
             success_count: 0,
             failure_count: 0,
             total_requests: 0,
+            trial_claimed: false,
         }
     }
 
@@ -50,6 +69,7 @@ impl ProviderHealthMetrics {
         self.total_requests += 1;
         self.consecutive_failures = 0;
         self.last_check = Utc::now();
+        self.trial_claimed = false;
         self.update_status();
     }
 
@@ -57,7 +77,11 @@ impl ProviderHealthMetrics {
         self.failure_count += 1;
         self.total_requests += 1;
         self.consecutive_failures += 1;
+        // Updating `last_check` here is what makes a failed half-open trial
+        // "reset the cooldown clock" -- the next `Unavailable` -> `HalfOpen`
+        // transition is measured from this moment, not the original trip.
         self.last_check = Utc::now();
+        self.trial_claimed = false;
         self.update_status();
     }
 
@@ -74,20 +98,83 @@ impl ProviderHealthMetrics {
 
 pub struct ProviderHealth {
     metrics: Arc<Mutex<HashMap<String, ProviderHealthMetrics>>>,
+    cooldown: chrono::Duration,
 }
 
 impl ProviderHealth {
     pub fn new() -> Self {
+        Self::with_cooldown(chrono::Duration::seconds(DEFAULT_COOLDOWN_SECONDS))
+    }
+
+    /// Same as `new()` but with a configurable half-open cooldown duration
+    /// (mainly so tests don't have to sleep 30s to exercise recovery).
+    pub fn with_cooldown(cooldown: chrono::Duration) -> Self {
         ProviderHealth {
             metrics: Arc::new(Mutex::new(HashMap::new())),
+            cooldown,
+        }
+    }
+
+    /// If `entry` has been `Unavailable` for at least the cooldown, lazily
+    /// flip it to `HalfOpen` so the next status check / trial acquisition
+    /// sees it as eligible for a recovery probe.
+    fn maybe_transition_to_half_open(entry: &mut ProviderHealthMetrics, cooldown: chrono::Duration) {
+        if entry.status == ProviderStatus::Unavailable {
+            let elapsed = Utc::now() - entry.last_check;
+            if elapsed >= cooldown {
+                entry.status = ProviderStatus::HalfOpen;
+                entry.trial_claimed = false;
+            }
         }
     }
 
     pub fn get_status(&self, provider: &str) -> Option<ProviderStatus> {
-        if let Ok(metrics) = self.metrics.lock() {
-            metrics.get(provider).map(|m| m.status.clone())
+        if let Ok(mut metrics) = self.metrics.lock() {
+            if let Some(entry) = metrics.get_mut(provider) {
+                Self::maybe_transition_to_half_open(entry, self.cooldown);
+                Some(entry.status.clone())
+            } else {
+                None
+            }
         } else {
             None
+        }
+    }
+
+    /// Whether a caller may actually issue a request against `provider`
+    /// right now -- the gate that should be checked immediately before each
+    /// real call/retry attempt (unlike `get_status`, which is read-only and
+    /// safe to call for listing/inspection without affecting anything).
+    ///
+    /// - Unknown provider (no metrics yet) / `Healthy` / `Degraded` -> always
+    ///   `true`.
+    /// - `Unavailable` and cooldown not yet elapsed -> `false`: the circuit
+    ///   is open, callers should abort/fail over instead of retrying.
+    /// - `HalfOpen` (cooldown elapsed) -> `true` for exactly one caller, who
+    ///   *must* report the outcome via `record_success`/`record_failure`;
+    ///   every other concurrent caller gets `false` until that trial
+    ///   resolves.
+    pub fn try_acquire_trial(&self, provider: &str) -> bool {
+        if let Ok(mut metrics) = self.metrics.lock() {
+            let entry = match metrics.get_mut(provider) {
+                Some(e) => e,
+                None => return true,
+            };
+            Self::maybe_transition_to_half_open(entry, self.cooldown);
+            match entry.status {
+                ProviderStatus::Unavailable => false,
+                ProviderStatus::HalfOpen => {
+                    if entry.trial_claimed {
+                        false
+                    } else {
+                        entry.trial_claimed = true;
+                        true
+                    }
+                }
+                ProviderStatus::Healthy | ProviderStatus::Degraded => true,
+            }
+        } else {
+            true
         }
     }
 
@@ -126,12 +213,15 @@ impl ProviderHealth {
     }
 
     pub fn available_providers(&self) -> Vec<String> {
-        if let Ok(metrics) = self.metrics.lock() {
-            metrics
-                .iter()
-                .filter(|(_, m)| m.is_available())
-                .map(|(k, _)| k.clone())
-                .collect()
+        if let Ok(mut metrics) = self.metrics.lock() {
+            let mut result = Vec::new();
+            for (provider, entry) in metrics.iter_mut() {
+                Self::maybe_transition_to_half_open(entry, self.cooldown);
+                if entry.is_available() {
+                    result.push(provider.clone());
+                }
+            }
+            result
         } else {
             Vec::new()
         }
@@ -154,6 +244,7 @@ impl Clone for ProviderHealth {
     fn clone(&self) -> Self {
         ProviderHealth {
             metrics: Arc::clone(&self.metrics),
+            cooldown: self.cooldown,
         }
     }
 }
@@ -299,5 +390,94 @@ mod tests {
         let metrics2 = health2.get_metrics("anthropic").unwrap();
 
         assert_eq!(metrics1.success_count, metrics2.success_count);
+    }
+
+    #[test]
+    fn test_try_acquire_trial_unknown_and_healthy_providers_always_allowed() {
+        let health = ProviderHealth::new();
+        // No metrics recorded yet -- treated as healthy.
+        assert!(health.try_acquire_trial("anthropic"));
+
+        health.record_success("openai");
+        assert!(health.try_acquire_trial("openai"));
+        assert!(health.try_acquire_trial("openai")); // repeatable, not one-shot
+    }
+
+    #[test]
+    fn test_try_acquire_trial_blocks_while_circuit_open() {
+        let health = ProviderHealth::with_cooldown(chrono::Duration::seconds(60));
+
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::Unavailable));
+
+        // Cooldown hasn't elapsed -- no trial available, caller should abort.
+        assert!(!health.try_acquire_trial("anthropic"));
+    }
+
+    #[test]
+    fn test_half_open_trial_allows_exactly_one_caller_then_recovers_on_success() {
+        // Tiny (but non-zero) cooldown so the test only needs a short real
+        // sleep rather than requiring a full 30s wait to exercise recovery.
+        let health = ProviderHealth::with_cooldown(chrono::Duration::milliseconds(20));
+
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::Unavailable));
+
+        // Cooldown not elapsed yet -- still hard open.
+        assert!(!health.try_acquire_trial("anthropic"));
+
+        std::thread::sleep(std::time::Duration::from_millis(40));
+
+        // Cooldown elapsed -- status lazily flips to HalfOpen and exactly
+        // one caller may claim the trial.
+        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::HalfOpen));
+        assert!(health.try_acquire_trial("anthropic"));
+        // A second, concurrent caller must not also get a trial slot.
+        assert!(!health.try_acquire_trial("anthropic"));
+
+        // Trial succeeds -> breaker fully closes again.
+        health.record_success("anthropic");
+        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::Degraded));
+        assert!(health.try_acquire_trial("anthropic"));
+    }
+
+    #[test]
+    fn test_half_open_trial_failure_reopens_circuit_and_resets_cooldown_clock() {
+        let health = ProviderHealth::with_cooldown(chrono::Duration::zero());
+
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+
+        // Claim and fail the half-open trial.
+        assert!(health.try_acquire_trial("anthropic"));
+        health.record_failure("anthropic");
+
+        // Back to a hard-open circuit: `last_check` was just bumped by the
+        // failed trial, so with a zero-second cooldown it should
+        // immediately be eligible to go half-open again (cooldown clock
+        // reset, not stuck permanently Unavailable) while still requiring a
+        // fresh trial claim.
+        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::HalfOpen));
+        assert!(health.try_acquire_trial("anthropic"));
+        assert!(!health.try_acquire_trial("anthropic"));
+    }
+
+    #[test]
+    fn test_half_open_provider_counts_as_available() {
+        let health = ProviderHealth::with_cooldown(chrono::Duration::zero());
+
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+        health.record_failure("anthropic");
+
+        // available_providers() should observe the lazy Unavailable ->
+        // HalfOpen transition too, not just get_status().
+        let available = health.available_providers();
+        assert!(available.contains(&"anthropic".to_string()));
     }
 }
