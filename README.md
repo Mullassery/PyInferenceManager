@@ -7,7 +7,7 @@ Routes requests to Anthropic Claude, OpenAI GPT, Google Gemini, or a local Ollam
 [![PyPI](https://img.shields.io/pypi/v/pyinferencemanager)](https://pypi.org/project/pyinferencemanager)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
 [![Tests](https://img.shields.io/github/actions/workflow/status/Mullassery/PyInferenceManager/tests.yml?label=tests)](https://github.com/Mullassery/PyInferenceManager/actions)
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 ---
 
@@ -124,4 +124,4 @@ The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) 
 
 ## License
 
-Proprietary License — free to use with explicit attribution. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE).

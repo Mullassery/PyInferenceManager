@@ -10,6 +10,7 @@ readme = "README.md"
 
 authors = [{ name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com" }]
 requires-python = ">=3.10"
+license = "Apache-2.0"
 keywords = [
     "ai", "orchestrator", "llm", "ollama", "anthropic", "openai", "local-first",
     "cost-optimization", "caching", "multi-provider", "routing", "inference",
