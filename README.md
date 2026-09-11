@@ -17,6 +17,22 @@ The core (Rust, ~11k lines, PyO3 bindings) is a workload orchestrator: it builds
 
 The Python API surface is a single `Orchestrator` class. There is no `Manager.chat()`, no streaming API, and no 11-provider marketplace — see [Providers](#providers) for the honest list.
 
+## Use cases
+
+- **Routing tasks between a local Ollama model and cloud providers based on
+  complexity/privacy/cost** — `mode="local_first"` with `privacy="high"`
+  forcing local execution regardless of mode, for anything that shouldn't
+  leave the machine.
+- **Enforcing a real spend cap across multiple LLM providers** —
+  `configure_budget(max_cost_usd=..., enforce_hard_limit=True)` is checked
+  on every real cloud call, not just logged after the fact.
+- **Degrading gracefully when a provider is down**, rather than crashing a
+  pipeline — `run()` never raises on a bad backend; it returns a result
+  whose `output` says so.
+- **Not yet a good fit for:** self-hosted inference via `tensorrt_llm`,
+  `mlc_llm`, or `colibri` — these are cost-estimator-only stubs today, not
+  live backends (see [Providers](#providers)).
+
 ## Install
 
 ```bash
@@ -121,6 +137,15 @@ The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) 
 
 - `tensorrt_llm`, `mlc_llm`, and `colibri` backends are cost-estimator-only stubs (see [Providers](#providers)) — they do not make live inference calls yet. `vllm` was a stub too as of 1.2.0 but is now a real backend.
 - No open GitHub issues and no `TODO`/`FIXME` markers in the codebase at the time of this writing.
+- **CI has an intermittent failure in one circuit-breaker retry test**, not
+  reproducible locally: `test_execute_cloud_with_retry_aborts_once_circuit_trips_instead_of_exhausting_max_attempts`
+  (`crates/pyinferencemanager-core/src/orchestrator/mod.rs`) failed once on
+  CI (4 HTTP calls observed instead of the expected 3), while passing 383/383
+  locally across multiple full-workspace runs, isolated and in-suite. Already
+  `#[serial]`-tagged; the likely cause is the test's `BackoffStrategy::Fixed
+  { delay_ms: 1 }` being too tight to reliably hold up under a loaded/
+  throttled CI runner's scheduling — not confirmed, flagged rather than
+  guessed at further.
 
 ## License
 
