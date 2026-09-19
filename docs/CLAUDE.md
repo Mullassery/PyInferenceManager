@@ -1,3 +1,11 @@
+> **Partially superseded.** Written during an early development phase
+> ("Phase 1 Goal (Weeks 1–6)"); some structure described below (e.g.
+> `tests/unit/`, `tests/integration/`, `tests/python/`) no longer matches
+> the repo (tests now live flat under `tests/`). Kept as background on
+> original design decisions. For current status, gaps, and technical debt,
+> see [`ROADMAP_HONEST.md`](../ROADMAP_HONEST.md) at the repo root; for
+> setup instructions, see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+
 # PyInferenceManager — Development Guide
 
 ## Project Overview

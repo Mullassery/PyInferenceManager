@@ -1,3 +1,10 @@
+> **Superseded.** This document describes an earlier, larger multi-project
+> vision (a "19 platform projects" ecosystem, "MCP 2.0 Platform member"
+> status) that does not reflect the current single-package reality of this
+> repo. Kept for history. For the actual current status, gaps, and
+> technical debt, see [`ROADMAP_HONEST.md`](../ROADMAP_HONEST.md) at the
+> repo root.
+
 # PyInferenceManager v2.0.0: Task Roadmap
 
 ## Current Status: Production Ready

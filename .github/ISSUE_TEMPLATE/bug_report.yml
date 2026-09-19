@@ -1,0 +1,61 @@
+name: Bug report
+description: Report something that doesn't work as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: check [ROADMAP_HONEST.md](https://github.com/Mullassery/PyInferenceManager/blob/main/ROADMAP_HONEST.md)
+        and the README's "Known issues" section — your bug might already be a
+        documented, understood limitation (e.g. the `tensorrt_llm`/`mlc_llm`/`colibri`
+        stub backends not making real calls is expected, not a bug).
+
+  - type: input
+    id: version
+    attributes:
+      label: PyInferenceManager version
+      description: Output of `pip show pyinferencemanager` or the git commit if built from source
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version and OS
+      placeholder: "e.g. Python 3.11, macOS 15 / Ubuntu 22.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include the actual error/output, not a paraphrase.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: A short Python snippet or shell commands that reproduce it, starting from `pip install pyinferencemanager`.
+      render: python
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked ROADMAP_HONEST.md and the README's Known Issues section first
+          required: true
+        - label: I can reproduce this consistently (or noted in the report that it's intermittent)
+          required: true

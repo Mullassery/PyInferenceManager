@@ -1,6 +1,24 @@
 # Changelog
 
-All notable changes to PyInferenceManager are documented in this file.
+All notable changes to PyInferenceManager are documented in this file, in
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) style.
+
+## [Unreleased]
+
+### Added
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ROADMAP_HONEST.md`, GitHub issue
+  templates, PR template, `.github/dependabot.yml` (cargo + pip +
+  github-actions), and a `cargo audit` CI workflow
+  (`.github/workflows/audit.yml`) as part of an OSS repo standardization
+  pass. No runtime code changed.
+- Real content for `docs/ARCHITECTURE.md` (previously an unfilled template),
+  including a Mermaid diagram of the actual `Orchestrator.run()` request
+  flow.
+
+### Changed
+- `docs/ROADMAP.md`, `docs/VISION_AND_ROADMAP.md`, `docs/PRODUCT_VISION.md`,
+  `docs/CLAUDE.md` marked as superseded by `ROADMAP_HONEST.md` (kept for
+  history, not deleted).
 
 ## [1.3.0] - 2026-08-30
 

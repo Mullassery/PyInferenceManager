@@ -48,7 +48,11 @@ env/
 
 # Rust
 target/
-Cargo.lock
+# Cargo.lock is intentionally committed (this ships a binary-ish PyO3
+# extension module, not a pure library) — do not add it here. It was
+# previously listed here despite being tracked, which is a landmine: a
+# `git rm --cached Cargo.lock` or clone-and-re-add would have silently
+# failed to restore it. See ROADMAP_HONEST.md history.
 
 # Temp files
 *.tmp

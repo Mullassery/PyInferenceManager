@@ -153,6 +153,22 @@ The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) 
   property that actually matters (breaker intervenes well before the
   configured `max_attempts=5`, `result.is_err()`, error text names the
   circuit breaker, status ends `Unavailable`) is still fully asserted.
+- `cargo clippy --workspace --all-targets` does not currently compile (3
+  pre-existing hard errors in test code, masked by `continue-on-error: true`
+  in CI) and `cargo fmt --check` fails on 9 pre-existing files. See
+  [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for exact file:line locations, the
+  full technical-debt list, and what's prioritized for a follow-up session.
+
+## Docs & contributing
+
+- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — the full, unhedged status: what's
+  built, what's broken, what's untested, and concrete technical debt.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — module map and request-flow
+  diagram.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, PR expectations.
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

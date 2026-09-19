@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a new capability or backend
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a single-maintainer project. For anything beyond a small
+        addition (e.g. a new cloud provider backend), please describe the
+        use case clearly — it helps decide whether it fits the project's
+        scope before any code gets written.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: What are you trying to do that PyInferenceManager doesn't support today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would the API/behavior look like? Include a code sketch if useful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Can this be done today by combining existing features (e.g. `configure_retry`, `configure_budget`)?
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked README.md and ROADMAP_HONEST.md to confirm this doesn't already exist
+          required: true

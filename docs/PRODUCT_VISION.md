@@ -1,3 +1,10 @@
+> **Superseded.** This document describes an earlier, larger multi-project
+> vision, including an inbound `StatGuardian` dependency that does not exist
+> in the current code (`tests/test_mcp_connector_security.py` explicitly
+> asserts StatGuardian is *not* imported). Kept for history. For the actual
+> current status, gaps, and technical debt, see
+> [`ROADMAP_HONEST.md`](../ROADMAP_HONEST.md) at the repo root.
+
 # PyInferenceManager v2.0.0: Product Vision
 
 ## Mission
