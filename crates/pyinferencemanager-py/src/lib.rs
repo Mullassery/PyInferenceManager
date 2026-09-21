@@ -1,5 +1,7 @@
 use pyinferencemanager_core::backends::BackendKind;
-use pyinferencemanager_core::optimizer::{BackoffStrategy, BudgetConfig, BudgetStatus, RetryConfig};
+use pyinferencemanager_core::optimizer::{
+    BackoffStrategy, BudgetConfig, BudgetStatus, RetryConfig,
+};
 use pyinferencemanager_core::orchestrator::{RealLoadTestConfig, RealLoadTester};
 use pyinferencemanager_core::{ExecutionMode, Orchestrator, OrchestratorConfig};
 use pyo3::prelude::*;
@@ -20,42 +22,58 @@ pub struct PyBackendKind {
 impl PyBackendKind {
     #[staticmethod]
     fn anthropic() -> Self {
-        PyBackendKind { inner: BackendKind::Anthropic }
+        PyBackendKind {
+            inner: BackendKind::Anthropic,
+        }
     }
 
     #[staticmethod]
     fn openai() -> Self {
-        PyBackendKind { inner: BackendKind::OpenAi }
+        PyBackendKind {
+            inner: BackendKind::OpenAi,
+        }
     }
 
     #[staticmethod]
     fn gemini() -> Self {
-        PyBackendKind { inner: BackendKind::Gemini }
+        PyBackendKind {
+            inner: BackendKind::Gemini,
+        }
     }
 
     #[staticmethod]
     fn ollama() -> Self {
-        PyBackendKind { inner: BackendKind::Ollama }
+        PyBackendKind {
+            inner: BackendKind::Ollama,
+        }
     }
 
     #[staticmethod]
     fn vllm() -> Self {
-        PyBackendKind { inner: BackendKind::VLlm }
+        PyBackendKind {
+            inner: BackendKind::VLlm,
+        }
     }
 
     #[staticmethod]
     fn tensorrt_llm() -> Self {
-        PyBackendKind { inner: BackendKind::TensorRtLlm }
+        PyBackendKind {
+            inner: BackendKind::TensorRtLlm,
+        }
     }
 
     #[staticmethod]
     fn mlc_llm() -> Self {
-        PyBackendKind { inner: BackendKind::MlcLlm }
+        PyBackendKind {
+            inner: BackendKind::MlcLlm,
+        }
     }
 
     #[staticmethod]
     fn colibri() -> Self {
-        PyBackendKind { inner: BackendKind::Colibri }
+        PyBackendKind {
+            inner: BackendKind::Colibri,
+        }
     }
 
     fn as_str(&self) -> String {
@@ -197,12 +215,11 @@ impl PyOrchestrator {
         let file_owned = file.map(|s| s.to_string());
         let message_owned = message.map(|s| s.to_string());
 
-        let mut py_task = Task::new(task_owned).with_options(
-            pyinferencemanager_core::types::TaskOptions {
+        let mut py_task =
+            Task::new(task_owned).with_options(pyinferencemanager_core::types::TaskOptions {
                 privacy: privacy_level,
                 ..Default::default()
-            },
-        );
+            });
 
         if let Some(file_path) = &file_owned {
             if let Ok(content) = std::fs::read(file_path) {
@@ -294,9 +311,9 @@ impl PyOrchestrator {
         })?;
 
         let perf = orchestrator.provider_performance();
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         for (name, metrics) in perf {
-            let entry = PyDict::new_bound(py);
+            let entry = PyDict::new(py);
             entry.set_item("success_rate", metrics.success_rate)?;
             entry.set_item("avg_latency_ms", metrics.avg_latency_ms)?;
             entry.set_item("cost_per_1k_tokens", metrics.cost_per_1k_tokens)?;
@@ -340,7 +357,7 @@ impl PyOrchestrator {
         })?;
 
         let status: BudgetStatus = orchestrator.budget_status();
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         dict.set_item("current_cost_usd", status.current_cost_usd)?;
         dict.set_item("max_cost_usd", status.max_cost_usd)?;
         dict.set_item("percent_used", status.percent_used)?;
@@ -365,8 +382,13 @@ impl PyOrchestrator {
         max_ms: u64,
     ) -> PyResult<()> {
         let strategy = match backoff {
-            "fixed" => BackoffStrategy::Fixed { delay_ms: initial_ms },
-            "linear" => BackoffStrategy::Linear { increment_ms: initial_ms, max_ms },
+            "fixed" => BackoffStrategy::Fixed {
+                delay_ms: initial_ms,
+            },
+            "linear" => BackoffStrategy::Linear {
+                increment_ms: initial_ms,
+                max_ms,
+            },
             "exponential" => BackoffStrategy::Exponential { initial_ms, max_ms },
             _ => {
                 return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -406,7 +428,7 @@ impl PyOrchestrator {
             let result = tester.run_load_test();
 
             Python::with_gil(|py| {
-                let dict = PyDict::new_bound(py);
+                let dict = PyDict::new(py);
                 dict.set_item("total_requests", result.total_requests)?;
                 dict.set_item("successful_requests", result.successful_requests)?;
                 dict.set_item("failed_requests", result.failed_requests)?;
@@ -507,7 +529,7 @@ impl PyWorkloadResult {
     }
 
     pub fn to_dict(&self, py: Python) -> PyResult<PyObject> {
-        let dict = pyo3::types::PyDict::new_bound(py);
+        let dict = pyo3::types::PyDict::new(py);
         dict.set_item("output", &self.inner.output)?;
         dict.set_item("total_tokens", self.inner.total_tokens)?;
         dict.set_item("total_cost_usd", self.inner.total_cost_usd)?;

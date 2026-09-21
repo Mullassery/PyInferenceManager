@@ -171,7 +171,13 @@ mod tests {
         assert_eq!(finished.status, "success");
         assert!(finished.end_time.is_some());
         assert!(finished.duration_ms.is_some());
-        assert!(finished.duration_ms.unwrap() >= 0);
+        // duration_ms is unsigned, so `>= 0` is always true and asserts nothing;
+        // the real invariant is that finishing a span immediately after creating
+        // it should take well under a second. This also guards against the
+        // `(end_time - start_time) as u64` cast in `finish()` silently wrapping
+        // around to a huge value if `end_time` were ever computed as earlier
+        // than `start_time`.
+        assert!(finished.duration_ms.unwrap() < 1_000);
     }
 
     #[test]

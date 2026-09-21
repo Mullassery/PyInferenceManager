@@ -276,7 +276,10 @@ mod tests {
         }
 
         let ranking = router.get_provider_ranking();
-        let (_, health_score) = ranking.iter().find(|(name, _)| name == "test-provider").unwrap();
+        let (_, health_score) = ranking
+            .iter()
+            .find(|(name, _)| name == "test-provider")
+            .unwrap();
 
         // success_rate stays ~1.0 (every call succeeded). If avg_latency_ms
         // were stuck at 0 (the bug), health_score would be ~1.0*0.7+1.0*0.3

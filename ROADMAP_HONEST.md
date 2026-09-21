@@ -53,40 +53,23 @@ provider/feature table. This file focuses on debt and gaps, not the pitch.
 
 ## Bugs and gaps found during this pass
 
-1. **`cargo clippy --workspace --all-targets` does not compile** — 3 hard
-   errors (clippy's `absurd_extreme_comparisons` lint, which is deny-by-default
-   and fails compilation, not just a warning):
-   - `crates/pyinferencemanager-core/src/observability/tracer.rs:174` —
-     `assert!(finished.duration_ms.unwrap() >= 0)` where `duration_ms` is
-     unsigned, so this is always true and asserts nothing.
-   - `crates/pyinferencemanager-core/src/orchestrator/real_load_tester.rs:301`
-     — same pattern, `assert!(result.dynamic_routing_changes >= 0)`.
-   - `crates/pyinferencemanager-core/src/orchestrator/mod.rs:557` — same
-     pattern, `assert!(r.cache_hits >= 0)`.
-   `.github/workflows/tests.yml`'s clippy step has `continue-on-error: true`
-   with a comment "not blocking on day one: this repo has 100+ pre-existing
-   warnings to clean up separately" — that flag is also silently swallowing
-   these 3 **compile errors**, meaning clippy has never actually passed in
-   CI and nobody would know from a green check mark. **Warrants a dedicated
-   follow-up**: fix the 3 useless asserts (or replace with an assertion that
-   actually tests something), then decide whether to remove
-   `continue-on-error` once the remaining ~85 warnings are triaged.
-2. **`cargo fmt --check` fails** — 37 diffs across 9 files (mostly multi-line
-   struct-literal wrapping that rustfmt now prefers differently than when
-   originally written): `crates/pyinferencemanager-core/src/backends/vllm_backend.rs`,
-   `engines/cloud_client.rs`, `engines/provider_health.rs`,
-   `engines/vllm_client.rs`, `optimizer/budget_enforcer.rs`,
-   `optimizer/dynamic_router.rs`, `orchestrator/api_executor.rs`,
-   `orchestrator/mod.rs`, `crates/pyinferencemanager-py/src/lib.rs`. Not
-   fixed in this pass (touching 9 source files for pure formatting was out
-   of scope for a documentation pass) but there is **no CI job that checks
-   formatting at all** — `tests.yml` never runs `cargo fmt --check`. Minor,
-   mechanical, safe to fix in a follow-up (`cargo fmt` + add a CI step).
-3. **Deprecated PyO3 API usage**: `PyDict::new_bound` (deprecated in favor of
-   `PyDict::new`) is used at 5 call sites in
-   `crates/pyinferencemanager-py/src/lib.rs` (lines 297, 299, 343, 409, 510).
-   Currently just a compiler warning; will become a hard break on a future
-   PyO3 major version. Small, mechanical fix — good first-issue candidate.
+1. ~~**`cargo clippy --workspace --all-targets` does not compile**~~ —
+   **Fixed 2026-09-21.** The 3 tautological `absurd_extreme_comparisons`
+   asserts at `observability/tracer.rs:174`,
+   `orchestrator/real_load_tester.rs:301`, and `orchestrator/mod.rs:557` were
+   replaced with real invariants (duration sanity bound, routing-change
+   bounds, cache-hit bound), not deleted. `cargo clippy --workspace
+   --all-targets` now exits 0 (71 pre-existing warnings remain untriaged;
+   `continue-on-error: true` left in place in `.github/workflows/tests.yml`
+   pending that separate triage).
+2. ~~**`cargo fmt --check` fails**~~ — **Fixed 2026-09-21.** Ran `cargo fmt
+   --all` across the 9 flagged files (formatting only, no behavior change);
+   `cargo fmt --all -- --check` now exits 0. `tests.yml` still has no
+   formatting-check CI step — that part of the gap remains open.
+3. ~~**Deprecated PyO3 API usage**~~ — **Fixed 2026-09-21.** All 5
+   `PyDict::new_bound` call sites in
+   `crates/pyinferencemanager-py/src/lib.rs` (lines 297, 299, 343, 409, 510)
+   now use `PyDict::new`, matching pyo3 0.23's current API.
 4. **Dead/unused struct fields** flagged by `cargo build` (not clippy):
    - `level: String` on `StructuredLogger`
      (`observability/logging.rs:10`) — never read.
@@ -161,9 +144,12 @@ diagram of the actual request flow.
 
 ## CI gaps
 
-- No formatting check (`cargo fmt --check`) — see bug #2 above.
-- Clippy step has `continue-on-error: true` and is currently masking 3 hard
-  compile errors, not just warnings — see bug #1 above.
+- No formatting check (`cargo fmt --check`) — see bug #2 above. Note: the
+  underlying `cargo fmt --check` failure itself was fixed 2026-09-21; a CI
+  step to keep it that way still doesn't exist.
+- Clippy step has `continue-on-error: true`. It no longer masks compile
+  errors (bug #1 fixed 2026-09-21) but still masks 71 real warnings, and the
+  flag has not been removed pending a triage of those.
 - No `cargo audit` job existed before this pass — added
   (`.github/workflows/audit.yml`).
 - No dependency-update automation existed before this pass — added
@@ -190,11 +176,14 @@ diagram of the actual request flow.
 
 ## Priority for a dedicated follow-up session
 
-1. Fix the 3 clippy compile errors (bug #1) — blocks ever turning off
-   `continue-on-error` and getting real clippy coverage.
+1. ~~Fix the 3 clippy compile errors (bug #1)~~ — done 2026-09-21. Still
+   open: triage the remaining 71 clippy warnings and then remove
+   `continue-on-error` from the clippy CI step.
 2. Resolve the `rate_limit_delay_ms`/`dynamic_router` dead-field question
    (bug #4) — determine if these are incomplete features or vestigial code.
-3. Run `cargo fmt` and add a CI formatting check (bug #2).
+3. ~~Run `cargo fmt` and add a CI formatting check (bug #2)~~ — `cargo fmt`
+   done 2026-09-21 (repo is clean under `--check` now); the CI step to
+   enforce it still needs to be added.
 4. Delete or wire up `planner/parallel.rs`.
 5. Triage the 71 `unwrap()`/13 `expect()` call sites in core logic (not the
    PyO3 boundary layer, which is already panic-safe) for which should become

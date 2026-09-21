@@ -118,7 +118,10 @@ impl ProviderHealth {
     /// If `entry` has been `Unavailable` for at least the cooldown, lazily
     /// flip it to `HalfOpen` so the next status check / trial acquisition
     /// sees it as eligible for a recovery probe.
-    fn maybe_transition_to_half_open(entry: &mut ProviderHealthMetrics, cooldown: chrono::Duration) {
+    fn maybe_transition_to_half_open(
+        entry: &mut ProviderHealthMetrics,
+        cooldown: chrono::Duration,
+    ) {
         if entry.status == ProviderStatus::Unavailable {
             let elapsed = Utc::now() - entry.last_check;
             if elapsed >= cooldown {
@@ -410,7 +413,10 @@ mod tests {
         health.record_failure("anthropic");
         health.record_failure("anthropic");
         health.record_failure("anthropic");
-        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::Unavailable));
+        assert_eq!(
+            health.get_status("anthropic"),
+            Some(ProviderStatus::Unavailable)
+        );
 
         // Cooldown hasn't elapsed -- no trial available, caller should abort.
         assert!(!health.try_acquire_trial("anthropic"));
@@ -425,7 +431,10 @@ mod tests {
         health.record_failure("anthropic");
         health.record_failure("anthropic");
         health.record_failure("anthropic");
-        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::Unavailable));
+        assert_eq!(
+            health.get_status("anthropic"),
+            Some(ProviderStatus::Unavailable)
+        );
 
         // Cooldown not elapsed yet -- still hard open.
         assert!(!health.try_acquire_trial("anthropic"));
@@ -434,14 +443,20 @@ mod tests {
 
         // Cooldown elapsed -- status lazily flips to HalfOpen and exactly
         // one caller may claim the trial.
-        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::HalfOpen));
+        assert_eq!(
+            health.get_status("anthropic"),
+            Some(ProviderStatus::HalfOpen)
+        );
         assert!(health.try_acquire_trial("anthropic"));
         // A second, concurrent caller must not also get a trial slot.
         assert!(!health.try_acquire_trial("anthropic"));
 
         // Trial succeeds -> breaker fully closes again.
         health.record_success("anthropic");
-        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::Degraded));
+        assert_eq!(
+            health.get_status("anthropic"),
+            Some(ProviderStatus::Degraded)
+        );
         assert!(health.try_acquire_trial("anthropic"));
     }
 
@@ -462,7 +477,10 @@ mod tests {
         // immediately be eligible to go half-open again (cooldown clock
         // reset, not stuck permanently Unavailable) while still requiring a
         // fresh trial claim.
-        assert_eq!(health.get_status("anthropic"), Some(ProviderStatus::HalfOpen));
+        assert_eq!(
+            health.get_status("anthropic"),
+            Some(ProviderStatus::HalfOpen)
+        );
         assert!(health.try_acquire_trial("anthropic"));
         assert!(!health.try_acquire_trial("anthropic"));
     }

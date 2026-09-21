@@ -297,8 +297,13 @@ mod tests {
         let mut tester = RealLoadTester::new(config);
         let result = tester.run_load_test();
 
-        // Should have made routing decisions
-        assert!(result.dynamic_routing_changes >= 0);
+        // Should have made routing decisions. `dynamic_routing_changes` is a
+        // u32, so `>= 0` is always true and asserts nothing; the real
+        // invariants are that at least one routing decision was made (the
+        // first request always counts as a "change" since there is no prior
+        // provider) and that it never exceeds the number of requests issued.
+        assert!(result.dynamic_routing_changes >= 1);
+        assert!(result.dynamic_routing_changes <= result.total_requests);
         assert!(!result.provider_metrics.is_empty());
     }
 

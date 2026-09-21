@@ -17,7 +17,9 @@ use crate::cache::SemanticCache;
 use crate::engines::{OllamaClient, ProviderHealth};
 use crate::error_classifier::ErrorClassifier;
 use crate::hardware::HardwareProfiler;
-use crate::optimizer::{BudgetConfig, BudgetEnforcer, BudgetStatus, CostTracker, DynamicRouter, RetryConfig};
+use crate::optimizer::{
+    BudgetConfig, BudgetEnforcer, BudgetStatus, CostTracker, DynamicRouter, RetryConfig,
+};
 use crate::planner::DagBuilder;
 use crate::router::{ExecutionRouter, MultiProviderRouter};
 use crate::types::{
@@ -220,11 +222,10 @@ impl Orchestrator {
                                     .await
                                 {
                                     Ok(exec_result) => {
-                                        node_cost_usd = orchestrator_ref
-                                            .calculate_provider_cost(
-                                                provider,
-                                                exec_result.tokens_used,
-                                            );
+                                        node_cost_usd = orchestrator_ref.calculate_provider_cost(
+                                            provider,
+                                            exec_result.tokens_used,
+                                        );
                                         node_result.output = exec_result.output;
                                         node_result.tokens_used = exec_result.tokens_used;
                                     }
@@ -340,7 +341,8 @@ impl Orchestrator {
 
             let start = std::time::Instant::now();
 
-            let outcome = tokio::time::timeout(provider_timeout, ProviderExecutor::execute(request)).await;
+            let outcome =
+                tokio::time::timeout(provider_timeout, ProviderExecutor::execute(request)).await;
 
             // Track whether this attempt failed because of our own hard
             // timeout (no HTTP status code to extract in that case) versus
@@ -554,7 +556,10 @@ mod tests {
 
         let r = result.unwrap();
         assert!(!r.output.is_empty());
-        assert!(r.cache_hits >= 0);
+        // cache_hits is a u32, so `>= 0` is always true and asserts nothing;
+        // the real invariant is that the number of cache hits can never
+        // exceed the number of DAG nodes actually executed.
+        assert!(r.cache_hits as usize <= r.node_results.len());
     }
 
     #[tokio::test]
@@ -691,7 +696,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_budget_and_retry_config_roundtrip() {
-        let mut orchestrator = Orchestrator::new(OrchestratorConfig::default()).await.unwrap();
+        let mut orchestrator = Orchestrator::new(OrchestratorConfig::default())
+            .await
+            .unwrap();
 
         orchestrator.set_budget_config(BudgetConfig {
             max_cost_usd: 5.0,
@@ -709,7 +716,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_execute_cloud_with_retry_refuses_when_budget_exhausted() {
-        let orchestrator = Orchestrator::new(OrchestratorConfig::default()).await.unwrap();
+        let orchestrator = Orchestrator::new(OrchestratorConfig::default())
+            .await
+            .unwrap();
         orchestrator.budget_enforcer.record_cost(1000.0).ok(); // blow past the $100 default hard limit
 
         let provider = CloudProvider::Anthropic {
@@ -754,7 +763,9 @@ mod tests {
         std::env::set_var("ANTHROPIC_API_KEY", "test-key");
         std::env::set_var("ANTHROPIC_BASE_URL", mock_server.uri());
 
-        let orchestrator = Orchestrator::new(OrchestratorConfig::default()).await.unwrap();
+        let orchestrator = Orchestrator::new(OrchestratorConfig::default())
+            .await
+            .unwrap();
         orchestrator.set_retry_config(
             RetryConfig::new(5).with_backoff(BackoffStrategy::Fixed { delay_ms: 1 }),
         );
@@ -787,7 +798,9 @@ mod tests {
             received.len()
         );
         assert_eq!(
-            orchestrator.provider_health().get_status("anthropic:claude-haiku-4-5"),
+            orchestrator
+                .provider_health()
+                .get_status("anthropic:claude-haiku-4-5"),
             Some(crate::engines::ProviderStatus::Unavailable)
         );
         assert!(result
@@ -821,7 +834,9 @@ mod tests {
         std::env::set_var("ANTHROPIC_API_KEY", "test-key");
         std::env::set_var("ANTHROPIC_BASE_URL", mock_server.uri());
 
-        let orchestrator = Orchestrator::new(OrchestratorConfig::default()).await.unwrap();
+        let orchestrator = Orchestrator::new(OrchestratorConfig::default())
+            .await
+            .unwrap();
         orchestrator.set_retry_config(
             RetryConfig::new(1).with_provider_timeout(StdDuration::from_millis(50)),
         );

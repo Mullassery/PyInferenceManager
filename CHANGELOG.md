@@ -20,6 +20,31 @@ All notable changes to PyInferenceManager are documented in this file, in
   `docs/CLAUDE.md` marked as superseded by `ROADMAP_HONEST.md` (kept for
   history, not deleted).
 
+### Fixed
+- `cargo clippy --all-targets` no longer fails to compile. Three tautological
+  `assert!(<unsigned> >= 0)` checks (always true, asserting nothing) tripped
+  clippy's deny-by-default `absurd_extreme_comparisons` lint as hard errors,
+  silently masked in CI by `continue-on-error: true`. Replaced each with a
+  real invariant:
+  - `observability/tracer.rs:174` — now asserts a freshly finished span's
+    `duration_ms` is under 1s (also guards against the `as u64` cast in
+    `TraceSpan::finish()` wrapping around if `end_time` were ever earlier
+    than `start_time`).
+  - `orchestrator/real_load_tester.rs:301` — now asserts
+    `dynamic_routing_changes` is at least 1 and no more than the number of
+    requests issued.
+  - `orchestrator/mod.rs:557` — now asserts `cache_hits` never exceeds the
+    number of DAG nodes executed.
+  `cargo clippy --workspace --all-targets` now exits 0 (71 pre-existing
+  warnings remain, not addressed here; `continue-on-error` in
+  `.github/workflows/tests.yml` was left in place since those warnings still
+  need a separate triage pass).
+- `cargo fmt --check` now passes. Ran `cargo fmt --all` across the 9 files
+  flagged in `ROADMAP_HONEST.md` (formatting only, no behavior change).
+- Replaced 5 uses of the deprecated PyO3 `PyDict::new_bound` with `PyDict::new`
+  in `crates/pyinferencemanager-py/src/lib.rs` (lines 297, 299, 343, 409, 510),
+  matching pyo3 0.23's current (non-`_bound`) API.
+
 ## [1.3.0] - 2026-08-30
 
 ### Added

@@ -168,7 +168,11 @@ mod tests {
         use std::sync::mpsc;
         use std::time::Duration;
 
-        let config = BudgetConfig { max_cost_usd: 10.0, alert_threshold_percent: 50.0, ..Default::default() };
+        let config = BudgetConfig {
+            max_cost_usd: 10.0,
+            alert_threshold_percent: 50.0,
+            ..Default::default()
+        };
         let enforcer = Arc::new(BudgetEnforcer::new(config));
 
         let (tx, rx) = mpsc::channel();

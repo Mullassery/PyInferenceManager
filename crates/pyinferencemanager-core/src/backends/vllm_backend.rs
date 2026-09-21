@@ -132,7 +132,10 @@ mod tests {
             max_tokens: 50,
         };
 
-        let result = backend.infer(request).await.expect("mocked infer should succeed");
+        let result = backend
+            .infer(request)
+            .await
+            .expect("mocked infer should succeed");
         assert_eq!(result.output, "Hello from vLLM");
         assert_eq!(result.tokens_used, 4);
     }

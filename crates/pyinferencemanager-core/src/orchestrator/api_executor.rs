@@ -174,7 +174,9 @@ impl ApiExecutor {
             CloudProvider::Gemini { .. } => std::env::var("GEMINI_API_KEY")
                 .or_else(|_| std::env::var("GOOGLE_API_KEY"))
                 .map_err(|_| {
-                    crate::Error::CloudError("GEMINI_API_KEY (or GOOGLE_API_KEY) not set".to_string())
+                    crate::Error::CloudError(
+                        "GEMINI_API_KEY (or GOOGLE_API_KEY) not set".to_string(),
+                    )
                 })?,
         };
 

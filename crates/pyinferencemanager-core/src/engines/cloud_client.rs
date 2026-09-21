@@ -40,7 +40,8 @@ impl CloudClient {
     /// ANTHROPIC_BASE_URL (e.g. to point at a compatible proxy, or a local
     /// mock server in tests) — defaults to the real public API.
     fn base_url() -> String {
-        std::env::var("ANTHROPIC_BASE_URL").unwrap_or_else(|_| "https://api.anthropic.com".to_string())
+        std::env::var("ANTHROPIC_BASE_URL")
+            .unwrap_or_else(|_| "https://api.anthropic.com".to_string())
     }
 
     pub async fn complete(&self, prompt: &str, max_tokens: u32) -> crate::Result<CloudResponse> {

@@ -85,14 +85,16 @@ impl VLlmClient {
     /// overridable via VLLM_BASE_URL; optional VLLM_API_KEY for deployments
     /// started with `--api-key`.
     pub fn with_defaults() -> Self {
-        let base_url = std::env::var("VLLM_BASE_URL")
-            .unwrap_or_else(|_| "http://localhost:8000".to_string());
+        let base_url =
+            std::env::var("VLLM_BASE_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
         Self::new(&base_url).with_api_key(std::env::var("VLLM_API_KEY").ok())
     }
 
     fn authorize(&self, builder: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         match &self.api_key {
-            Some(key) if !key.is_empty() => builder.header("Authorization", format!("Bearer {}", key)),
+            Some(key) if !key.is_empty() => {
+                builder.header("Authorization", format!("Bearer {}", key))
+            }
             _ => builder,
         }
     }
@@ -181,7 +183,9 @@ impl VLlmClient {
         Ok(CompletionResult {
             text: choice.text,
             tokens_used,
-            finish_reason: choice.finish_reason.unwrap_or_else(|| "unknown".to_string()),
+            finish_reason: choice
+                .finish_reason
+                .unwrap_or_else(|| "unknown".to_string()),
         })
     }
 }
@@ -211,7 +215,8 @@ mod tests {
 
     #[test]
     fn test_vllm_client_with_api_key() {
-        let client = VLlmClient::new("http://localhost:8000").with_api_key(Some("secret".to_string()));
+        let client =
+            VLlmClient::new("http://localhost:8000").with_api_key(Some("secret".to_string()));
         assert_eq!(client.api_key, Some("secret".to_string()));
     }
 
@@ -255,7 +260,11 @@ mod tests {
 
         let client = VLlmClient::new(&mock_server.uri());
         let result = client
-            .complete("meta-llama/Llama-3-8b", "What is the capital of France?", 50)
+            .complete(
+                "meta-llama/Llama-3-8b",
+                "What is the capital of France?",
+                50,
+            )
             .await
             .expect("mocked vLLM completion should succeed");
 
@@ -298,10 +307,14 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let client = VLlmClient::new(&mock_server.uri()).with_api_key(Some("test-vllm-key".to_string()));
+        let client =
+            VLlmClient::new(&mock_server.uri()).with_api_key(Some("test-vllm-key".to_string()));
         let result = client.complete("model", "Hi", 10).await;
 
-        assert!(result.is_ok(), "request with matching auth header should succeed");
+        assert!(
+            result.is_ok(),
+            "request with matching auth header should succeed"
+        );
     }
 
     #[tokio::test]
@@ -318,7 +331,10 @@ mod tests {
             .await;
 
         let client = VLlmClient::new(&mock_server.uri());
-        let models = client.list_models().await.expect("mocked list_models should succeed");
+        let models = client
+            .list_models()
+            .await
+            .expect("mocked list_models should succeed");
 
         assert_eq!(models, vec!["meta-llama/Llama-3-8b".to_string()]);
     }
