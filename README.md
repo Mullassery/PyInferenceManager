@@ -128,6 +128,22 @@ Cloud execution dispatches through `BackendRegistry`/`RuntimeBackend` (not a han
 
 The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) binds to `127.0.0.1` by default with scoped CORS and permissions; binding elsewhere requires passing `allow_remote=True` explicitly.
 
+## vs LiteLLM
+
+[LiteLLM](https://github.com/BerriAI/litellm) is the closest OSS equivalent — a unified interface over many LLM providers. It's a much broader, more mature project (100+ providers, a proxy server, spend-tracking dashboard); PyInferenceManager is narrower but adds real complexity-based local/cloud routing, hard budget enforcement, and provider-health-aware retry on top of the call itself.
+
+Measured 2026-09-22, both pointed at the same real, local Ollama model (`qwen2.5:7b-instruct`) — no cloud API keys are required for either tool, so this is genuine local inference latency, **not** a stand-in for cloud-provider (OpenAI/Anthropic) numbers:
+
+| | PyInferenceManager (`Orchestrator.run`) | LiteLLM (`litellm.completion`) |
+|---|---|---|
+| 10 varied real prompts, sequential | 41.7s total · 2054ms median/call | 36.7s total · 2533ms median/call |
+| Same 10 prompts, concurrent (`asyncio.gather`) | not exposed — Python API is sync-only, no `run()` async variant | 38.1s total (no real speedup — this local Ollama install serializes inference requests regardless of client-side concurrency) |
+| Output quality | Correct, coherent answers on all 10 prompts (same underlying model, so near-identical phrasing) | Same |
+
+Neither tool is meaningfully "faster" here — both are bottlenecked by the same local model doing the same real token generation; the ~9-13% gap either direction across runs is orchestration overhead (DAG planning, budget/retry checks, cache lookup) around the same Ollama call, not a differentiator worth optimizing for. The real difference is scope: LiteLLM gives you the broadest provider coverage and an async-first client; PyInferenceManager gives you routing decisions, spend caps, and retry/health tracking as first-class, tested behavior, at the cost of only 5 live backends (Anthropic, OpenAI, Gemini, Ollama, vLLM) plus 3 honestly-labeled cost-estimator stubs.
+
+**Bug found and fixed while running this benchmark:** every real `run()` call — including the ones in this benchmark — reported a bogus `"unknown"` entry in the documented `result.engines_used` field (see the Quick start example above) alongside the real engine, because the DAG's `cache_lookup` node left its default placeholder `engine_used` value in place on a cache miss, and `PlanResult::add_node_result` (`crates/pyinferencemanager-core/src/types/plan.rs:111`) pushed it into the aggregate list unconditionally. Fixed by labeling a cache-miss node `"cache_miss"` instead of the ambiguous `"unknown"` (`crates/pyinferencemanager-core/src/orchestrator/mod.rs`, cache_lookup branch) and excluding both placeholder values from `engines_used` (`plan.rs:111`). Full Rust suite re-verified: 383/383 passing.
+
 ## Testing
 
 - Rust core: `cargo test --workspace` (350+ tests, including HTTP-mocked request/response tests for every cloud client via [`wiremock`](https://docs.rs/wiremock)).

@@ -108,7 +108,8 @@ impl WorkloadResult {
         if result.cache_hit {
             self.cache_hits += 1;
         }
-        if !self.engines_used.contains(&result.engine_used) {
+        let is_real_engine = result.engine_used != "cache_miss" && result.engine_used != "unknown";
+        if is_real_engine && !self.engines_used.contains(&result.engine_used) {
             self.engines_used.push(result.engine_used.clone());
         }
         self.node_results.push(result);

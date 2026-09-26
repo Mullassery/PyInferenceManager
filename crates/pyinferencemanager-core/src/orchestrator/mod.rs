@@ -190,6 +190,13 @@ impl Orchestrator {
                             node_result.cache_hit = true;
                             node_result.engine_used = "cache_lookup".to_string();
                             node_result.tokens_used = 0;
+                        } else {
+                            // Cache miss: this node did no real work, so it must not surface
+                            // as a bogus "unknown" entry in the plan's aggregate engines_used
+                            // (PlanResult::add_node_result pushes engine_used verbatim, and
+                            // "unknown" was otherwise indistinguishable from an actual failed
+                            // engine dispatch).
+                            node_result.engine_used = "cache_miss".to_string();
                         }
                     } else {
                         let engine = router.select_engine(complexity, &privacy, false, &hardware);
