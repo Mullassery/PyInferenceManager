@@ -35,6 +35,16 @@ All notable changes to PyInferenceManager are documented in this file, in
     requests issued.
   - `orchestrator/mod.rs:557` — now asserts `cache_hits` never exceeds the
     number of DAG nodes executed.
+- Every `run()` call's `engines_used` field reported a bogus `"unknown"`
+  entry alongside the real engine used, on every cache miss. The DAG's
+  `cache_lookup` node left its default placeholder `engine_used` value in
+  place on a cache miss, and `PlanResult::add_node_result`
+  (`crates/pyinferencemanager-core/src/types/plan.rs:111`) pushed it into
+  the aggregate list unconditionally. Fixed by labeling a cache-miss node
+  `"cache_miss"` instead (`orchestrator/mod.rs`, cache_lookup branch) and
+  excluding both placeholder values from `engines_used` (`plan.rs:111`).
+  Found while benchmarking against LiteLLM (see README "vs LiteLLM").
+  Full suite re-verified: 383/383 passing.
   `cargo clippy --workspace --all-targets` now exits 0 (71 pre-existing
   warnings remain, not addressed here; `continue-on-error` in
   `.github/workflows/tests.yml` was left in place since those warnings still
