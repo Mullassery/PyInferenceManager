@@ -1,5 +1,7 @@
 # PyInferenceManager
 
+[![Grapify](https://img.shields.io/badge/Grapify-Code%20Scan-purple)](https://grapify.ai)
+
 **A multi-provider LLM inference orchestrator with cost/latency-aware routing, real retry + budget guardrails, and local-first execution.**
 
 Routes requests to Anthropic Claude, OpenAI GPT, Google Gemini, or a local Ollama model based on task complexity, privacy, and observed provider health — with real retry/backoff on failures and a real spend cap you configure.
