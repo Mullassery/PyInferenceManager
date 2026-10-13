@@ -1,47 +1,74 @@
 # PyInferenceManager
 
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
-
 **A multi-provider LLM inference orchestrator with cost/latency-aware routing, real retry + budget guardrails, and local-first execution.**
 
-Routes requests to Anthropic Claude, OpenAI GPT, Google Gemini, or a local Ollama model based on task complexity, privacy, and observed provider health — with real retry/backoff on failures and a real spend cap you configure.
-
-[![PyPI](https://img.shields.io/pypi/v/pyinferencemanager)](https://pypi.org/project/pyinferencemanager)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/pyinferencemanager)](https://pypi.org/project/pyinferencemanager/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
 [![Tests](https://img.shields.io/github/actions/workflow/status/Mullassery/PyInferenceManager/tests.yml?label=tests)](https://github.com/Mullassery/PyInferenceManager/actions)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
 
----
+## What it is
 
-## What this actually is
+The core (Rust, ~11k lines, PyO3 bindings) is a workload orchestrator: it builds a small
+execution DAG for a task, profiles your local hardware, picks an engine (local Ollama model
+vs. a cloud provider) based on complexity/privacy/cost, executes with real retry and budget
+enforcement, and semantically caches results. Routes requests to Anthropic Claude, OpenAI
+GPT, Google Gemini, or a local Ollama model based on task complexity, privacy, and observed
+provider health — with real retry/backoff on failures and a real spend cap you configure.
 
-The core (Rust, ~11k lines, PyO3 bindings) is a workload orchestrator: it builds a small execution DAG for a task, profiles your local hardware, picks an engine (local Ollama model vs. a cloud provider) based on complexity/privacy/cost, executes with real retry and budget enforcement, and semantically caches results.
+The Python API surface is a single `Orchestrator` class. There is no `Manager.chat()`, no
+streaming API, and no 11-provider marketplace — see [Providers](#providers) for the honest
+list.
 
-The Python API surface is a single `Orchestrator` class. There is no `Manager.chat()`, no streaming API, and no 11-provider marketplace — see [Providers](#providers) for the honest list.
+## Features
 
-## Use cases
+- **Complexity/privacy/cost-aware routing** between local Ollama models and cloud providers.
+- **Hard budget enforcement** checked on every real cloud call, with request-count caps and
+  alert thresholds.
+- **Provider-health-aware retry** with configurable exponential backoff for retryable errors
+  (HTTP 429/408/5xx).
+- **Semantic caching** and hardware profiling (memory tier, Apple Silicon/Metal, local
+  models).
+- **Graceful degradation:** `run()` never raises on a bad backend; it returns a result whose
+  `output` says so.
+- **MCP tools** exposing the same engine, and a hardware/synthetic load-test path.
 
-- **Routing tasks between a local Ollama model and cloud providers based on
-  complexity/privacy/cost** — `mode="local_first"` with `privacy="high"`
-  forcing local execution regardless of mode, for anything that shouldn't
-  leave the machine.
-- **Enforcing a real spend cap across multiple LLM providers** —
-  `configure_budget(max_cost_usd=..., enforce_hard_limit=True)` is checked
-  on every real cloud call, not just logged after the fact.
-- **Degrading gracefully when a provider is down**, rather than crashing a
-  pipeline — `run()` never raises on a bad backend; it returns a result
-  whose `output` says so.
-- **Not yet a good fit for:** self-hosted inference via `tensorrt_llm`,
-  `mlc_llm`, or `colibri` — these are cost-estimator-only stubs today, not
-  live backends (see [Providers](#providers)).
+## Who it's for
 
-## Install
+- **Teams routing tasks between a local Ollama model and cloud providers** based on
+  complexity/privacy/cost — `mode="local_first"` with `privacy="high"` forces local
+  execution regardless of mode, for anything that shouldn't leave the machine.
+- **Anyone enforcing a real spend cap across multiple LLM providers** —
+  `configure_budget(max_cost_usd=..., enforce_hard_limit=True)` is checked on every real
+  cloud call, not just logged after the fact.
+- **Pipelines that need to degrade gracefully when a provider is down**, rather than crash.
+
+## What it is not
+
+- **Not a broad provider marketplace.** There are 5 live backends (Anthropic, OpenAI,
+  Gemini, Ollama, vLLM); `tensorrt_llm`, `mlc_llm`, and `colibri` are cost-estimator-only
+  stubs with real estimation logic but no live inference.
+- **Not async.** The Python API is sync-only; there is no `run()` async variant.
+- **Not a proxy server or spend dashboard.** It's a library, narrower in scope than LiteLLM.
+- **Not a substitute for the providers' own SDKs.** The Rust core makes HTTP calls directly;
+  no Python SDK dependencies are required.
+
+## Project status
+
+**Beta.** Version 1.3.0. Core routing, budget enforcement, retry, caching, and the 5 live
+backends are real and tested; the three stub backends and the pre-existing lint/format debt
+below are honest gaps. See [`ROADMAP_HONEST.md`](ROADMAP_HONEST.md) for the full, unhedged
+status. Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
+
+## Installation
 
 ```bash
 pip install pyinferencemanager
 ```
 
-Requires Python 3.10+.
+Requires Python 3.10+. PyPI currently carries a macOS ARM64 `abi3` wheel plus an sdist;
+other platforms build the sdist from source (a Rust toolchain is required).
 
 Set whichever provider keys you plan to use (none are required for local-only Ollama use):
 
@@ -66,11 +93,18 @@ print(f"Engines used: {result.engines_used}")
 print(f"Cost: ${result.total_cost_usd:.4f} | Latency: {result.total_latency_ms}ms | Tokens: {result.total_tokens}")
 ```
 
-`mode="local_first"` runs on your local Ollama model when it's adequate for the task's complexity and escalates to a cloud provider otherwise. `mode="cloud_first"` prefers a cloud provider, falling back to local only for very low-complexity tasks. `privacy="high"` on any call always forces local execution regardless of mode.
+`mode="local_first"` runs on your local Ollama model when it's adequate for the task's
+complexity and escalates to a cloud provider otherwise. `mode="cloud_first"` prefers a
+cloud provider, falling back to local only for very low-complexity tasks. `privacy="high"`
+on any call always forces local execution regardless of mode.
 
-If the selected backend is unreachable or unauthenticated, `run()` doesn't raise — it returns a result whose `output` says so (e.g. `"[cloud inference unavailable: ...]"`), so a single bad provider doesn't crash your pipeline.
+If the selected backend is unreachable or unauthenticated, `run()` doesn't raise — it
+returns a result whose `output` says so (e.g. `"[cloud inference unavailable: ...]"`), so a
+single bad provider doesn't crash your pipeline.
 
-## Core API
+## Usage
+
+### Core API
 
 ```python
 orchestrator = Orchestrator(mode="local_first")
@@ -108,7 +142,7 @@ orchestrator.available_backends()
 
 See [`examples/`](examples/) for runnable scripts covering each of these.
 
-## Providers
+### Providers
 
 Real HTTP calls, with retry/backoff and cost tracking:
 
@@ -120,73 +154,100 @@ Real HTTP calls, with retry/backoff and cost tracking:
 | Ollama (local) | — | whatever models you've pulled locally |
 | vLLM (local) | — | OpenAI-compatible endpoint, default `localhost:8000` |
 
-Additionally, `tensorrt_llm`, `mlc_llm`, and `colibri` exist as **cost-estimator-only stubs** (`BackendKind`/`RuntimeBackend` trait implementations with real cost/latency estimation logic, but no live inference) — they're placeholders for self-hosted inference servers, not currently wired to make real calls. `orchestrator.available_backends()` lists all of these honestly, including the stubs.
+Additionally, `tensorrt_llm`, `mlc_llm`, and `colibri` exist as **cost-estimator-only
+stubs** (real cost/latency estimation logic, but no live inference).
+`orchestrator.available_backends()` lists all of these honestly, including the stubs.
 
-Cloud execution dispatches through `BackendRegistry`/`RuntimeBackend` (not a hand-matched provider enum): `ProviderExecutor::execute` maps a `CloudProvider` to its `BackendKind`, registers the one backend it needs (reading the API key from the env vars above), and calls it through the same `RuntimeBackend::infer` trait object every backend implements — so adding a new cloud provider is a new `BackendKind`/backend + one dispatch arm, not edits scattered across every call site that used to match the old enum.
+Cloud execution dispatches through `BackendRegistry`/`RuntimeBackend`: `ProviderExecutor::execute`
+maps a `CloudProvider` to its `BackendKind`, registers the one backend it needs (reading the
+API key from the env vars above), and calls it through the same `RuntimeBackend::infer`
+trait object every backend implements — so adding a new cloud provider is a new
+`BackendKind`/backend plus one dispatch arm.
 
-## MCP tools
+### MCP tools
 
-`pyinferencemanager._mcp_tools.PyInferenceManagerMCPHandler` exposes 13 MCP-style tools (`list_available_models`, `execute_inference`, `estimate_inference_cost`, `get_provider_status`, etc.), all backed by a real `Orchestrator` instance — no hardcoded responses. See [`examples/mcp_pyinferencemanager.py`](examples/mcp_pyinferencemanager.py).
+`pyinferencemanager._mcp_tools.PyInferenceManagerMCPHandler` exposes 13 MCP-style tools
+(`list_available_models`, `execute_inference`, `estimate_inference_cost`,
+`get_provider_status`, etc.), all backed by a real `Orchestrator` instance — no hardcoded
+responses. See [`examples/mcp_pyinferencemanager.py`](examples/mcp_pyinferencemanager.py).
 
-The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) binds to `127.0.0.1` by default with scoped CORS and permissions; binding elsewhere requires passing `allow_remote=True` explicitly.
+The network connector (`_mcp_connector.InferenceManager.start_mcp_connector()`) binds to
+`127.0.0.1` by default with scoped CORS and permissions; binding elsewhere requires passing
+`allow_remote=True` explicitly.
 
-## vs LiteLLM
+### vs LiteLLM
 
-[LiteLLM](https://github.com/BerriAI/litellm) is the closest OSS equivalent — a unified interface over many LLM providers. It's a much broader, more mature project (100+ providers, a proxy server, spend-tracking dashboard); PyInferenceManager is narrower but adds real complexity-based local/cloud routing, hard budget enforcement, and provider-health-aware retry on top of the call itself.
+[LiteLLM](https://github.com/BerriAI/litellm) is the closest OSS equivalent — a unified
+interface over many LLM providers. It's a much broader, more mature project (100+ providers,
+a proxy server, spend-tracking dashboard); PyInferenceManager is narrower but adds real
+complexity-based local/cloud routing, hard budget enforcement, and provider-health-aware
+retry on top of the call itself.
 
-Measured 2026-09-22, both pointed at the same real, local Ollama model (`qwen2.5:7b-instruct`) — no cloud API keys are required for either tool, so this is genuine local inference latency, **not** a stand-in for cloud-provider (OpenAI/Anthropic) numbers:
+Measured 2026-09-22, both pointed at the same real, local Ollama model
+(`qwen2.5:7b-instruct`) — genuine local inference latency, not a stand-in for cloud-provider
+numbers:
 
 | | PyInferenceManager (`Orchestrator.run`) | LiteLLM (`litellm.completion`) |
 |---|---|---|
 | 10 varied real prompts, sequential | 41.7s total · 2054ms median/call | 36.7s total · 2533ms median/call |
-| Same 10 prompts, concurrent (`asyncio.gather`) | not exposed — Python API is sync-only, no `run()` async variant | 38.1s total (no real speedup — this local Ollama install serializes inference requests regardless of client-side concurrency) |
-| Output quality | Correct, coherent answers on all 10 prompts (same underlying model, so near-identical phrasing) | Same |
+| Same 10 prompts, concurrent (`asyncio.gather`) | not exposed — Python API is sync-only | 38.1s total (no real speedup — this local Ollama install serializes inference requests) |
+| Output quality | Correct, coherent answers on all 10 prompts | Same |
 
-Neither tool is meaningfully "faster" here — both are bottlenecked by the same local model doing the same real token generation; the ~9-13% gap either direction across runs is orchestration overhead (DAG planning, budget/retry checks, cache lookup) around the same Ollama call, not a differentiator worth optimizing for. The real difference is scope: LiteLLM gives you the broadest provider coverage and an async-first client; PyInferenceManager gives you routing decisions, spend caps, and retry/health tracking as first-class, tested behavior, at the cost of only 5 live backends (Anthropic, OpenAI, Gemini, Ollama, vLLM) plus 3 honestly-labeled cost-estimator stubs.
+Neither tool is meaningfully "faster" here — both are bottlenecked by the same local model
+doing the same real token generation; the gap either direction is orchestration overhead
+around the same Ollama call. The real difference is scope: LiteLLM gives you the broadest
+provider coverage and an async-first client; PyInferenceManager gives you routing decisions,
+spend caps, and retry/health tracking as first-class, tested behavior.
 
-**Bug found and fixed while running this benchmark:** every real `run()` call — including the ones in this benchmark — reported a bogus `"unknown"` entry in the documented `result.engines_used` field (see the Quick start example above) alongside the real engine, because the DAG's `cache_lookup` node left its default placeholder `engine_used` value in place on a cache miss, and `PlanResult::add_node_result` (`crates/pyinferencemanager-core/src/types/plan.rs:111`) pushed it into the aggregate list unconditionally. Fixed by labeling a cache-miss node `"cache_miss"` instead of the ambiguous `"unknown"` (`crates/pyinferencemanager-core/src/orchestrator/mod.rs`, cache_lookup branch) and excluding both placeholder values from `engines_used` (`plan.rs:111`). Full Rust suite re-verified: 383/383 passing.
+### Testing
 
-## Testing
+- Rust core: `cargo test --workspace` (350+ tests, including HTTP-mocked request/response
+  tests for every cloud client via [`wiremock`](https://docs.rs/wiremock)).
+- Python: `pytest tests/` — covers `Orchestrator.run/plan/provider_ranking`, the MCP tool
+  handlers, budget/retry configuration, load testing, and MCP connector security defaults,
+  all without requiring live API keys.
 
-- Rust core: `cargo test --workspace` (350+ tests, including HTTP-mocked request/response tests for every cloud client via [`wiremock`](https://docs.rs/wiremock)).
-- Python: `pytest tests/` — covers `Orchestrator.run/plan/provider_ranking`, the MCP tool handlers, budget/retry configuration, load testing, and MCP connector security defaults, all without requiring live API keys.
+## Documentation
+
+- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — the full, unhedged status: what's built, what's
+  broken, what's untested, and concrete technical debt.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — module map and request-flow diagram.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, PR expectations.
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability.
+- [CHANGELOG.md](CHANGELOG.md) — release history.
 
 ## Known issues
 
-- `tensorrt_llm`, `mlc_llm`, and `colibri` backends are cost-estimator-only stubs (see [Providers](#providers)) — they do not make live inference calls yet. `vllm` was a stub too as of 1.2.0 but is now a real backend.
-- No open GitHub issues and no `TODO`/`FIXME` markers in the codebase at the time of this writing.
-- The circuit-breaker retry test
-  (`test_execute_cloud_with_retry_aborts_once_circuit_trips_instead_of_exhausting_max_attempts`,
-  `crates/pyinferencemanager-core/src/orchestrator/mod.rs`) intermittently
-  observed 4 real HTTP calls in CI instead of the 3 that
-  `execute_cloud_with_retry`/`ProviderHealth` traces out to on paper (breaker
-  trips to `Unavailable` on the 3rd consecutive failure, loop re-checks
-  health before a 4th call). 2026-09-13 investigation traced the logic
-  end-to-end and reproduced 0/8 failures locally (5 isolated re-runs, 3 full
-  383-test-suite runs) — no root cause in the retry/health-check logic
-  itself was found, and none of the usual suspects (attribute order,
-  cross-test lock scope, env var leakage) checked out. 2026-09-18: rather
-  than keep guessing at a CI-environment-specific race that resisted 8
-  local repro attempts, the assertion now tolerates 3 or 4 calls — the
-  property that actually matters (breaker intervenes well before the
-  configured `max_attempts=5`, `result.is_err()`, error text names the
-  circuit breaker, status ends `Unavailable`) is still fully asserted.
-- `cargo clippy --workspace --all-targets` does not currently compile (3
-  pre-existing hard errors in test code, masked by `continue-on-error: true`
-  in CI) and `cargo fmt --check` fails on 9 pre-existing files. See
-  [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for exact file:line locations, the
-  full technical-debt list, and what's prioritized for a follow-up session.
+- `tensorrt_llm`, `mlc_llm`, and `colibri` backends are cost-estimator-only stubs (see
+  [Providers](#providers)) — they do not make live inference calls yet. `vllm` was a stub in
+  1.2.0 but is now a real backend.
+- The circuit-breaker retry test intermittently observed 4 real HTTP calls in CI instead of
+  the 3 traced out on paper; after a 2026-09-13 investigation reproduced 0/8 failures
+  locally with no root cause found, the assertion now tolerates 3 or 4 calls while still
+  asserting the property that matters (the breaker intervenes well before the configured
+  `max_attempts=5`).
+- `cargo clippy --workspace --all-targets` does not currently compile (3 pre-existing hard
+  errors in test code, masked by `continue-on-error: true` in CI) and `cargo fmt --check`
+  fails on 9 pre-existing files. See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for exact
+  file:line locations and the full technical-debt list.
 
-## Docs & contributing
+## Contributing
 
-- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — the full, unhedged status: what's
-  built, what's broken, what's untested, and concrete technical debt.
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — module map and request-flow
-  diagram.
-- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, PR expectations.
-- [SECURITY.md](SECURITY.md) — how to report a vulnerability.
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-- [CHANGELOG.md](CHANGELOG.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup and PR expectations, and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards. Rust tests run with
+`cargo test --workspace`; Python tests with `pytest tests/`.
+
+## Related projects
+
+Other tools from the same family, for adjacent parts of the LLM/AI stack:
+
+- [PyTokenCalc](https://github.com/Mullassery/PyTokenCalc) — count tokens and estimate LLM costs across 20+ providers before you send a request.
+- [OpenAnchor](https://github.com/Mullassery/OpenAnchor) — token intelligence middleware for multi-provider LLM usage: 6D attribution, pattern detection, recommendations, OTEL export.
+- [PyVectorHound](https://github.com/Mullassery/PyVectorHound) — diagnostic engine for RAG retrieval failures: component-level analysis, root cause detection, and optimization recommendations.
+- [PyStreamMCP](https://github.com/Mullassery/PyStreamMCP) — intelligence layer for AI agents: query planning, context discovery, and cost optimization.
+- [PyStreamAI](https://github.com/Mullassery/PyStreamAI) — ML deployment toolkit: canary/A-B routing, cost tracking, request scheduling, hot model reload, and ONNX Runtime inference.
+
+[Browse all projects →](https://github.com/Mullassery?tab=repositories)
 
 ## License
 
