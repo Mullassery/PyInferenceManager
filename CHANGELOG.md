@@ -55,6 +55,11 @@ All notable changes to PyInferenceManager are documented in this file, in
   in `crates/pyinferencemanager-py/src/lib.rs` (lines 297, 299, 343, 409, 510),
   matching pyo3 0.23's current (non-`_bound`) API.
 
+## [1.3.1] - 2026-10-17
+
+### Fixed
+- Audit remediation: security hardening, correctness fixes, and lint/CI gates.
+
 ## [1.3.0] - 2026-08-30
 
 ### Added
