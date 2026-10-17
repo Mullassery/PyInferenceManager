@@ -222,15 +222,21 @@ impl PyOrchestrator {
             });
 
         if let Some(file_path) = &file_owned {
-            if let Ok(content) = std::fs::read(file_path) {
-                let attachment = Attachment {
-                    kind: AttachmentKind::File,
-                    content,
-                    mime_type: "application/octet-stream".to_string(),
-                    name: file_path.clone(),
-                };
-                py_task = py_task.with_attachment(attachment);
-            }
+            // A missing/unreadable `file` must surface as an error, not be
+            // silently dropped: the caller asked for that attachment, so
+            // handing back a result computed without it would be wrong.
+            let content = std::fs::read(file_path).map_err(|e| {
+                PyErr::new::<pyo3::exceptions::PyIOError, _>(format!(
+                    "failed to read file {file_path:?}: {e}"
+                ))
+            })?;
+            let attachment = Attachment {
+                kind: AttachmentKind::File,
+                content,
+                mime_type: "application/octet-stream".to_string(),
+                name: file_path.clone(),
+            };
+            py_task = py_task.with_attachment(attachment);
         }
 
         if let Some(msg) = &message_owned {

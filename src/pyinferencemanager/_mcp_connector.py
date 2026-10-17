@@ -19,6 +19,7 @@ the caller to explicitly opt in and is loud about the tradeoff — see
 
 import json
 import logging
+import os
 import subprocess
 import tempfile
 from abc import ABC, abstractmethod
@@ -40,6 +41,10 @@ class BaseMCPConnector(ABC):
         self.host = host
         self.port = port
         self.dab_process: Optional[subprocess.Popen] = None
+        # Path of the generated `dab` config temp file, so it can be removed
+        # on stop (or on a failed start) rather than accumulating in the
+        # system temp dir for the life of the machine.
+        self.dab_config_path: Optional[str] = None
         self._ready = False
 
         if host not in ("127.0.0.1", "localhost", "::1"):
@@ -68,11 +73,14 @@ class BaseMCPConnector(ABC):
             self.handler = self.get_tool_handlers()
             config = self._generate_dab_config(tools)
             config_path = self._write_temp_config(config)
+            self.dab_config_path = config_path
             self._start_dab_subprocess(config_path)
             self._ready = True
             return f"http://{self.host}:{self.port}/mcp"
         except Exception as e:
             logger.error(f"Failed: {e}")
+            # Don't leave the generated config behind on a failed start.
+            self._remove_temp_config()
             raise
 
     def stop_mcp_connector(self):
@@ -83,6 +91,18 @@ class BaseMCPConnector(ABC):
             except (subprocess.TimeoutExpired, OSError):
                 pass
             self._ready = False
+        # Remove the generated config regardless of whether a process was
+        # started, so a failed start doesn't leak a temp file either.
+        self._remove_temp_config()
+
+    def _remove_temp_config(self):
+        path = self.dab_config_path
+        self.dab_config_path = None
+        if path:
+            try:
+                os.remove(path)
+            except OSError:
+                logger.debug("could not remove temp dab config %s", path)
 
     def _generate_dab_config(self, tools: Dict[str, Any]) -> Dict:
         return {
@@ -113,7 +133,18 @@ class BaseMCPConnector(ABC):
 
     def _write_temp_config(self, config: Dict) -> str:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json.dump(config, f)
+            try:
+                json.dump(config, f)
+            except Exception:
+                # Serialization failed: remove the half-written temp file
+                # rather than leaking it, then let the caller see the error.
+                path = f.name
+                f.close()
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+                raise
             return f.name
 
     def _start_dab_subprocess(self, config_path: str):
