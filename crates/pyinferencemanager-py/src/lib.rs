@@ -172,7 +172,7 @@ impl PyOrchestrator {
 
         // Construction does real filesystem I/O (SQLite cache setup) — release
         // the GIL so other Python threads aren't blocked while that happens.
-        py.allow_threads(|| {
+        py.detach(|| {
             let runtime = tokio::runtime::Runtime::new()
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
 
@@ -256,7 +256,7 @@ impl PyOrchestrator {
         // take seconds. Releasing the GIL lets other Python threads run
         // (e.g. concurrent orchestrator calls, or just an unrelated UI
         // thread) instead of being serialized behind this one blocking call.
-        py.allow_threads(move || {
+        py.detach(move || {
             let orchestrator = inner.lock().map_err(|_| {
                 PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
                     "Failed to acquire orchestrator lock",
@@ -277,7 +277,7 @@ impl PyOrchestrator {
 
         let task_owned = task.to_string();
 
-        py.allow_threads(move || {
+        py.detach(move || {
             let py_task = Task::new(task_owned);
 
             let orchestrator = self.inner.lock().map_err(|_| {
@@ -311,7 +311,7 @@ impl PyOrchestrator {
     /// Real-time per-provider performance metrics (success rate, average
     /// latency, cost/1k tokens, health score, request count) as tracked by
     /// the dynamic router from actual completed calls.
-    pub fn provider_performance(&self, py: Python<'_>) -> PyResult<PyObject> {
+    pub fn provider_performance(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let orchestrator = self.inner.lock().map_err(|_| {
             PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Failed to acquire orchestrator lock")
         })?;
@@ -357,7 +357,7 @@ impl PyOrchestrator {
     }
 
     /// Current spend/alerts/remaining budget against the configured cap.
-    pub fn budget_status(&self, py: Python<'_>) -> PyResult<PyObject> {
+    pub fn budget_status(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let orchestrator = self.inner.lock().map_err(|_| {
             PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Failed to acquire orchestrator lock")
         })?;
@@ -423,8 +423,8 @@ impl PyOrchestrator {
         py: Python<'_>,
         num_requests: u32,
         budget_usd: f32,
-    ) -> PyResult<PyObject> {
-        py.allow_threads(|| {
+    ) -> PyResult<Py<PyAny>> {
+        py.detach(|| {
             let config = RealLoadTestConfig {
                 num_requests,
                 budget_usd,
@@ -433,7 +433,7 @@ impl PyOrchestrator {
             let mut tester = RealLoadTester::new(config);
             let result = tester.run_load_test();
 
-            Python::with_gil(|py| {
+            Python::attach(|py| {
                 let dict = PyDict::new(py);
                 dict.set_item("total_requests", result.total_requests)?;
                 dict.set_item("successful_requests", result.successful_requests)?;
@@ -455,7 +455,7 @@ impl PyOrchestrator {
     }
 
     pub fn profile_hardware(&self, py: Python<'_>) -> PyResult<PyHardwareProfile> {
-        py.allow_threads(|| {
+        py.detach(|| {
             let orchestrator = self.inner.lock().map_err(|_| {
                 PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
                     "Failed to acquire orchestrator lock",
@@ -534,7 +534,7 @@ impl PyWorkloadResult {
         self.inner.cache_hits
     }
 
-    pub fn to_dict(&self, py: Python) -> PyResult<PyObject> {
+    pub fn to_dict(&self, py: Python) -> PyResult<Py<PyAny>> {
         let dict = pyo3::types::PyDict::new(py);
         dict.set_item("output", &self.inner.output)?;
         dict.set_item("total_tokens", self.inner.total_tokens)?;

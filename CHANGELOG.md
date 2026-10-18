@@ -5,6 +5,23 @@ All notable changes to PyInferenceManager are documented in this file, in
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-18
+
+### Security
+- Resolved all 13 `cargo audit` advisories (RUSTSEC-2026-0258, RUSTSEC-2024-0437,
+  RUSTSEC-2025-0020, RUSTSEC-2026-0177, RUSTSEC-2026-0338/0339/0340/0341/0342,
+  RUSTSEC-2026-0285/0346/0348/0349):
+  - `pyo3` 0.23 → 0.29 (buffer-overflow in `PyString::from_object`; missing
+    `Sync` bound on `PyCFunction::new_closure`). Migrated `Python::allow_threads`
+    → `Python::detach`, `Python::with_gil` → `Python::attach`, and
+    `PyObject` → `Py<PyAny>`.
+  - `h2` 0.4.15 → 0.4.16, `rustls` 0.23.42 → 0.23.46, `quinn-proto`
+    0.11.16 → 0.11.18 (transitive).
+  - Removed the unused `opentelemetry-jaeger`, `opentelemetry-prometheus`, and
+    `tracing-opentelemetry` dependencies (they pulled `protobuf` 2.28, which
+    has RUSTSEC-2024-0437). The `observability` module hand-rolls its
+    Jaeger/Prometheus export and never used these crates.
+
 ### Added
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ROADMAP_HONEST.md`, GitHub issue
   templates, PR template, `.github/dependabot.yml` (cargo + pip +
