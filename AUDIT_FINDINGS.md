@@ -20,7 +20,8 @@ Multi-provider LLM inference orchestration with cost/latency-aware routing, hard
 
 ## Verified gaps and user-facing risks
 
-- Sync-only Python API — no async/streaming, which real LLM workloads require.
+- Python API was sync-only — an `asyncio.to_thread` facade (`acomplete`/
+  `arun_concurrent`) now exists; native async and streaming are still absent.
 - Three providers are cost-estimator stubs; macOS arm64 wheel only; no provider-parity tests against live APIs; no proxy/spend dashboard.
 - GitHub release v0.4.2 vs PyPI 1.3.2.
 
@@ -40,7 +41,8 @@ Multi-provider LLM inference orchestration with cost/latency-aware routing, hard
 
 ## Evidence gaps / validation needed
 
-- No routing-quality or cost-savings benchmark; no async workload test.
+- No routing-quality or cost-savings benchmark; async workload tests now cover
+  event-loop responsiveness but not native async throughput or streaming.
 
 ## Recommended disposition
 
@@ -48,4 +50,6 @@ Invest as a library, not a gateway.
 
 ## Implementation status
 
-No code changes in this pass.
+2026-10-20: added a thread-offloaded async Python facade
+(`acomplete` / `arun_concurrent` / `acomplete_batch`) and its tests. Native async
+Rust futures and token streaming remain open.

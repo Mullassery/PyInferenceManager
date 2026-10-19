@@ -1,5 +1,9 @@
-from ._core import __version__, PyOrchestrator
-from .litellm_adapter import LiteLLMClient, LiteLLMResult, LiteLLMUnavailable, complete as litellm_complete
+import asyncio
+
+from ._core import PyOrchestrator, __version__
+from .litellm_adapter import LiteLLMClient, LiteLLMResult, LiteLLMUnavailable
+from .litellm_adapter import complete as litellm_complete
+
 
 class Orchestrator:
     """
@@ -27,7 +31,13 @@ class Orchestrator:
         """
         self._orchestrator = PyOrchestrator(mode=mode)
 
-    def run(self, task: str, file: str = None, message: str = None, privacy: str = "low"):
+    def run(
+        self,
+        task: str,
+        file: str | None = None,
+        message: str | None = None,
+        privacy: str = "low",
+    ):
         """
         Execute a workload.
 
@@ -41,10 +51,35 @@ class Orchestrator:
             WorkloadResult with output, cost, latency, and metrics
         """
         return self._orchestrator.run(
-            task=task,
+            task=task, file=file, message=message, privacy=privacy
+        )
+
+    async def acomplete(
+        self,
+        task: str,
+        file: str | None = None,
+        message: str | None = None,
+        privacy: str = "low",
+    ):
+        """Async facade for :meth:`run`, executed in a worker thread.
+
+        This lets an asyncio application await a completion without blocking
+        the event loop. It is not a native async runtime or a token-streaming
+        API: the Rust call still runs synchronously in a thread via
+        :func:`asyncio.to_thread`.
+
+        Cancelling the returned coroutine stops awaiting it, but cannot
+        interrupt the worker thread; the underlying call may finish in the
+        background. The Rust orchestrator's state is mutex-guarded, so
+        cancellation does not corrupt it. Exceptions from :meth:`run`
+        propagate unchanged.
+        """
+        return await asyncio.to_thread(
+            self.run,
+            task,
             file=file,
             message=message,
-            privacy=privacy
+            privacy=privacy,
         )
 
     def run_concurrent(
@@ -82,6 +117,36 @@ class Orchestrator:
             max_concurrency=max_concurrency,
         )
 
+    async def arun_concurrent(
+        self,
+        prompts,
+        task: str = "question_answering",
+        privacy: str = "low",
+        max_concurrency: int = 4,
+    ):
+        """Async facade for :meth:`run_concurrent`, run in a worker thread.
+
+        The batch still uses the Rust core's bounded concurrency (provider
+        HTTP calls overlap up to ``max_concurrency``), while the event loop
+        stays free because the blocking call is offloaded with
+        :func:`asyncio.to_thread`. Results are returned in the same order as
+        ``prompts``. This is not a native async API and does not stream
+        tokens.
+
+        Cancelling the coroutine stops awaiting the batch but cannot
+        interrupt the worker thread; the batch may finish in the background.
+        Orchestrator state is mutex-guarded, so cancellation does not corrupt
+        it. Exceptions from :meth:`run_concurrent` propagate unchanged.
+        """
+        prompts_list = list(prompts)
+        return await asyncio.to_thread(
+            self.run_concurrent,
+            prompts_list,
+            task=task,
+            privacy=privacy,
+            max_concurrency=max_concurrency,
+        )
+
     def complete_batch(
         self,
         prompts,
@@ -91,6 +156,21 @@ class Orchestrator:
     ):
         """Alias for :meth:`run_concurrent` for batch-completion callers."""
         return self.run_concurrent(
+            prompts=prompts,
+            task=task,
+            privacy=privacy,
+            max_concurrency=max_concurrency,
+        )
+
+    async def acomplete_batch(
+        self,
+        prompts,
+        task: str = "question_answering",
+        privacy: str = "low",
+        max_concurrency: int = 4,
+    ):
+        """Async alias for :meth:`arun_concurrent`."""
+        return await self.arun_concurrent(
             prompts=prompts,
             task=task,
             privacy=privacy,
@@ -244,10 +324,10 @@ class Orchestrator:
 
 
 __all__ = [
-    "__version__",
-    "Orchestrator",
     "LiteLLMClient",
     "LiteLLMResult",
     "LiteLLMUnavailable",
+    "Orchestrator",
+    "__version__",
     "litellm_complete",
 ]

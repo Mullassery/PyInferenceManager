@@ -5,11 +5,6 @@ All notable changes to PyInferenceManager are documented in this file, in
 
 ## [Unreleased]
 
-### Fixed
-- `fallback_routing` now actually tries `fallback_models` in order (primary first) and reports `used_model`/`attempted_models`, instead of accepting the list and ignoring it.
-
-## [Unreleased]
-
 ### Added
 - Bounded concurrent batch execution: `Orchestrator.run_concurrent()` and
   `complete_batch()` (backed by the new `Orchestrator::execute_batch` in the Rust
@@ -19,11 +14,23 @@ All notable changes to PyInferenceManager are documented in this file, in
   uses this path instead of a sequential loop. Covered by Rust wiremock tests and
   Python tests against a local threaded HTTP server that asserts in-flight
   overlap and the configured concurrency bound.
+- Async Python facade: `Orchestrator.acomplete()`, `arun_concurrent()`, and
+  `acomplete_batch()` wrap the blocking `run()` / `run_concurrent()` calls with
+  `asyncio.to_thread`, so asyncio callers do not block the event loop. Exceptions
+  propagate unchanged and results stay mapped to inputs. This is not a native
+  async Rust runtime and does not stream tokens; cancellation stops the await but
+  cannot interrupt the worker thread, and concurrent calls on one orchestrator
+  serialize on the Rust mutex. Covered by pytest-asyncio tests against the local
+  mock provider, including a heartbeat task that proves the loop keeps running
+  and a cancellation test that verifies the orchestrator remains usable.
 - Optional MIT LiteLLM adapter (`pyinferencemanager[litellm]`):
   `Orchestrator.complete_with_litellm()`, `LiteLLMClient`, normalized usage/cost
   reporting, and streaming via `LiteLLMClient.stream()`.
 - Native OpenRouter backend (`OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`) through
   the existing `CloudProvider`/`BackendKind` dispatch.
+
+### Fixed
+- `fallback_routing` now actually tries `fallback_models` in order (primary first) and reports `used_model`/`attempted_models`, instead of accepting the list and ignoring it.
 
 ## [1.3.2] - 2026-10-18
 

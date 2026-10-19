@@ -8,9 +8,14 @@ This file records what was shipped, what is blocked/failed, and what is rejected
   `batch_inference` handler wired to it.
 - Optional LiteLLM adapter (`complete_with_litellm`, streaming) and native OpenRouter backend.
 
+## Shipped (async facade)
+- `Orchestrator.acomplete` / `arun_concurrent` / `acomplete_batch` provide an
+  asyncio-friendly API by offloading the blocking Rust calls with
+  `asyncio.to_thread`. The event loop stays free; cancellation cannot interrupt
+  the worker thread and does not corrupt mutex-guarded state.
+
 ## Blocked / failed
-- Async Python client and token streaming (the Python API remains synchronous;
-  concurrency is exposed as a blocking bounded batch API, not an async API).
+- Native async Python client (true non-blocking Rust futures) and token streaming.
 - Provider-parity live tests.
 
 ## Rejected / deferred

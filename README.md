@@ -33,6 +33,9 @@ list.
 - **Bounded concurrent batch execution** via `run_concurrent()` / `complete_batch()`: real
   overlapping provider requests with a caller-set `max_concurrency`, results returned in
   input order.
+- **Async facade** via `acomplete()` / `arun_concurrent()` / `acomplete_batch()`, which
+  offload the blocking Rust calls with `asyncio.to_thread` so they do not block the event
+  loop. This is thread-offloaded async, not a native async runtime or streaming API.
 - **Graceful degradation:** `run()` never raises on a bad backend; it returns a result whose
   `output` says so.
 - **MCP tools** exposing the same engine, and a hardware/synthetic load-test path.
@@ -52,10 +55,13 @@ list.
 - **Not a broad provider marketplace.** There are 6 live backends (Anthropic, OpenAI,
   Gemini, OpenRouter, Ollama, vLLM); `tensorrt_llm`, `mlc_llm`, and `colibri` are
   cost-estimator-only stubs with real estimation logic but no live inference.
-- **Not async or streaming.** The Python API is synchronous; there is no `run()` async
-  variant and no token-streaming API. Bounded concurrent batch execution is available
-  through `run_concurrent()` / `complete_batch()`, which really overlaps requests but is
-  still a blocking call.
+- **Not natively async or streaming.** The synchronous calls remain the primary API. There
+  are awaitable wrappers (`acomplete()`, `arun_concurrent()`, `acomplete_batch()`) built on
+  `asyncio.to_thread`; they keep the event loop free but do not make the Rust core async,
+  do not stream tokens, and cancellation cannot interrupt the worker thread. Per-call state
+  is mutex-guarded, so a cancelled await cannot corrupt the orchestrator. Concurrent calls
+  on the same `Orchestrator` instance serialize on that mutex; use `arun_concurrent()` for
+  bounded parallel work.
 - **Not a proxy server or spend dashboard.** It's a library, narrower in scope than LiteLLM.
 - **Not a substitute for the providers' own SDKs.** The Rust core makes HTTP calls directly;
   no Python SDK dependencies are required.
@@ -131,6 +137,22 @@ for prompt_result in results:
     print(prompt_result.output)
 
 # complete_batch() is an alias with the same behavior.
+
+# Async facade: keeps the asyncio event loop free while the Rust call runs
+# in a worker thread. No token streaming; cancellation stops the await but
+# cannot interrupt the worker.
+import asyncio
+
+async def main():
+    result = await orchestrator.acomplete(
+        task="question_answering", message="Summarize the release notes."
+    )
+    batch = await orchestrator.arun_concurrent(
+        ["First prompt", "Second prompt"], max_concurrency=2
+    )
+    return result, batch
+
+# asyncio.run(main())
 
 # Estimate cost/latency without executing anything.
 plan = orchestrator.plan("Summarize this document")
@@ -250,10 +272,12 @@ spend caps, and retry/health tracking as first-class, tested behavior.
 
 - Rust core: `cargo test --workspace` (350+ tests, including HTTP-mocked request/response
   tests for every cloud client via [`wiremock`](https://docs.rs/wiremock)).
-- Python: `pytest tests/` — covers `Orchestrator.run/plan/run_concurrent/provider_ranking`,
-  the MCP tool handlers, budget/retry configuration, load testing, and MCP connector
-  security defaults, all without requiring live API keys. Concurrency tests use a local
-  threaded HTTP server and assert both real in-flight overlap and the configured bound.
+- Python: `pytest tests/` — covers `Orchestrator.run/plan/run_concurrent/acomplete/
+  arun_concurrent/provider_ranking`, the MCP tool handlers, budget/retry configuration,
+  load testing, and MCP connector security defaults, all without requiring live API keys.
+  Concurrency tests use a local threaded HTTP server and assert both real in-flight overlap
+  and the configured bound; async tests add a heartbeat task to prove the event loop keeps
+  running while the worker thread waits on the provider.
 
 ## Documentation
 
@@ -282,10 +306,11 @@ spend caps, and retry/health tracking as first-class, tested behavior.
 ## Known issues and deferred work
 
 **Blocked / failed:**
-- Async Python client and token streaming remain unimplemented. Bounded concurrent batch
-  execution is now exposed (`run_concurrent` / `complete_batch`), but the Python API is still
-  synchronous and has no async/streaming variant. Provider-parity live tests also remain
-  deferred.
+- A native async Python client (true non-blocking Rust futures or a dedicated async runtime)
+  and token streaming remain unimplemented. The current `acomplete()` / `arun_concurrent()`
+  facade uses `asyncio.to_thread`, so calls stay off the event loop but cancellation cannot
+  stop the worker thread and concurrent calls on one `Orchestrator` serialize on the Rust
+  mutex. Provider-parity live tests also remain deferred.
 
 **Rejected / deferred:**
 - Proxy server or spend dashboard; LiteLLM owns it.
