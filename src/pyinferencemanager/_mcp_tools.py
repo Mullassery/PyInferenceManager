@@ -329,22 +329,34 @@ class PyInferenceManagerMCPHandler:
 
     async def fallback_routing(self, primary_model: str, fallback_models: List[str],
                               prompt: str) -> Dict[str, Any]:
-        # A single real call — provider-level retry/failover already
-        # happens inside the Rust core (execute_cloud_with_retry) for cloud
-        # providers. `fallback_models` is accepted for interface
-        # compatibility but isn't yet independently selectable; the engine
-        # actually used is reported honestly below rather than assumed.
-        result = self._orchestrator.run(task=primary_model, message=prompt)
-        engine_used = result.engines_used[-1] if result.engines_used else None
-        return {
-            "primary_model": primary_model,
-            "fallback_models": fallback_models,
-            "engine_used": engine_used,
-            "output": result.output,
-            "total_tokens": result.total_tokens,
-            "cost_usd": result.total_cost_usd,
-            "latency_ms": result.total_latency_ms,
-        }
+        # Try the primary model first, then each fallback in order. Provider
+        # retry already exists inside the Rust core; this adds the
+        # model-level fallback the tool advertises. The model that actually
+        # succeeded is reported, not assumed.
+        attempted: List[str] = []
+        last_error: Optional[BaseException] = None
+        for model in [primary_model, *fallback_models]:
+            attempted.append(model)
+            try:
+                result = self._orchestrator.run(task=model, message=prompt)
+            except Exception as exc:  # try the next configured model
+                last_error = exc
+                continue
+            engine_used = result.engines_used[-1] if result.engines_used else None
+            return {
+                "primary_model": primary_model,
+                "fallback_models": fallback_models,
+                "engine_used": engine_used,
+                "used_model": model,
+                "attempted_models": attempted,
+                "output": result.output,
+                "total_tokens": result.total_tokens,
+                "cost_usd": result.total_cost_usd,
+                "latency_ms": result.total_latency_ms,
+            }
+        raise RuntimeError(
+            f"all models failed (attempted: {', '.join(attempted)}): {last_error}"
+        ) from last_error
 
     async def get_model_metrics(self, model_name: str, time_window_hours: int = 24,
                                metrics: Optional[List[str]] = None) -> Dict[str, Any]:

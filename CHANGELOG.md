@@ -5,6 +5,11 @@ All notable changes to PyInferenceManager are documented in this file, in
 
 ## [Unreleased]
 
+### Fixed
+- `fallback_routing` now actually tries `fallback_models` in order (primary first) and reports `used_model`/`attempted_models`, instead of accepting the list and ignoring it.
+
+## [Unreleased]
+
 ### Added
 - Bounded concurrent batch execution: `Orchestrator.run_concurrent()` and
   `complete_batch()` (backed by the new `Orchestrator::execute_batch` in the Rust
