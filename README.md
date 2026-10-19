@@ -30,6 +30,9 @@ list.
   (HTTP 429/408/5xx).
 - **Semantic caching** and hardware profiling (memory tier, Apple Silicon/Metal, local
   models).
+- **Bounded concurrent batch execution** via `run_concurrent()` / `complete_batch()`: real
+  overlapping provider requests with a caller-set `max_concurrency`, results returned in
+  input order.
 - **Graceful degradation:** `run()` never raises on a bad backend; it returns a result whose
   `output` says so.
 - **MCP tools** exposing the same engine, and a hardware/synthetic load-test path.
@@ -49,7 +52,10 @@ list.
 - **Not a broad provider marketplace.** There are 6 live backends (Anthropic, OpenAI,
   Gemini, OpenRouter, Ollama, vLLM); `tensorrt_llm`, `mlc_llm`, and `colibri` are
   cost-estimator-only stubs with real estimation logic but no live inference.
-- **Not async.** The Python API is sync-only; there is no `run()` async variant.
+- **Not async or streaming.** The Python API is synchronous; there is no `run()` async
+  variant and no token-streaming API. Bounded concurrent batch execution is available
+  through `run_concurrent()` / `complete_batch()`, which really overlaps requests but is
+  still a blocking call.
 - **Not a proxy server or spend dashboard.** It's a library, narrower in scope than LiteLLM.
 - **Not a substitute for the providers' own SDKs.** The Rust core makes HTTP calls directly;
   no Python SDK dependencies are required.
@@ -112,6 +118,19 @@ orchestrator = Orchestrator(mode="local_first")
 # Execute a task — real inference against Ollama or a cloud provider.
 result = orchestrator.run(task="...", file=None, message=None, privacy="low")
 # result.output, .total_tokens, .total_cost_usd, .total_latency_ms, .engines_used, .cache_hits
+
+# Execute several prompts concurrently (at most max_concurrency in flight).
+# Results come back in the same order as the prompts. Backend failures still
+# degrade per item, exactly like run().
+results = orchestrator.run_concurrent(
+    ["First prompt", "Second prompt", "Third prompt"],
+    task="question_answering",
+    max_concurrency=3,
+)
+for prompt_result in results:
+    print(prompt_result.output)
+
+# complete_batch() is an alias with the same behavior.
 
 # Estimate cost/latency without executing anything.
 plan = orchestrator.plan("Summarize this document")
@@ -218,7 +237,7 @@ numbers:
 | | PyInferenceManager (`Orchestrator.run`) | LiteLLM (`litellm.completion`) |
 |---|---|---|
 | 10 varied real prompts, sequential | 41.7s total · 2054ms median/call | 36.7s total · 2533ms median/call |
-| Same 10 prompts, concurrent (`asyncio.gather`) | not exposed — Python API is sync-only | 38.1s total (no real speedup — this local Ollama install serializes inference requests) |
+| Same 10 prompts, concurrent | supported via `Orchestrator.run_concurrent(max_concurrency=10)`; not re-benchmarked here (this local Ollama install serializes inference requests, so no speedup is expected for this setup) | 38.1s total (no real speedup — this local Ollama install serializes inference requests) |
 | Output quality | Correct, coherent answers on all 10 prompts | Same |
 
 Neither tool is meaningfully "faster" here — both are bottlenecked by the same local model
@@ -231,9 +250,10 @@ spend caps, and retry/health tracking as first-class, tested behavior.
 
 - Rust core: `cargo test --workspace` (350+ tests, including HTTP-mocked request/response
   tests for every cloud client via [`wiremock`](https://docs.rs/wiremock)).
-- Python: `pytest tests/` — covers `Orchestrator.run/plan/provider_ranking`, the MCP tool
-  handlers, budget/retry configuration, load testing, and MCP connector security defaults,
-  all without requiring live API keys.
+- Python: `pytest tests/` — covers `Orchestrator.run/plan/run_concurrent/provider_ranking`,
+  the MCP tool handlers, budget/retry configuration, load testing, and MCP connector
+  security defaults, all without requiring live API keys. Concurrency tests use a local
+  threaded HTTP server and assert both real in-flight overlap and the configured bound.
 
 ## Documentation
 
@@ -262,7 +282,10 @@ spend caps, and retry/health tracking as first-class, tested behavior.
 ## Known issues and deferred work
 
 **Blocked / failed:**
-- Async/streaming API and provider-parity live tests.
+- Async Python client and token streaming remain unimplemented. Bounded concurrent batch
+  execution is now exposed (`run_concurrent` / `complete_batch`), but the Python API is still
+  synchronous and has no async/streaming variant. Provider-parity live tests also remain
+  deferred.
 
 **Rejected / deferred:**
 - Proxy server or spend dashboard; LiteLLM owns it.

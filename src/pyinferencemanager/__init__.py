@@ -47,6 +47,56 @@ class Orchestrator:
             privacy=privacy
         )
 
+    def run_concurrent(
+        self,
+        prompts,
+        task: str = "question_answering",
+        privacy: str = "low",
+        max_concurrency: int = 4,
+    ):
+        """Execute multiple prompts concurrently with bounded in-flight work.
+
+        Each prompt becomes its own task (using ``task`` as the shared task
+        description and the prompt as its message), so routing, caching,
+        retry, and budget enforcement behave exactly as in :meth:`run`.
+        Provider HTTP calls genuinely overlap; this is not a sequential loop
+        dressed up as a batch API.
+
+        Args:
+            prompts: Iterable of prompt strings.
+            task: Task description used for routing/complexity classification.
+            privacy: "low" (default) or "high" (force local execution).
+            max_concurrency: Maximum number of prompts in flight at once
+                (must be >= 1).
+
+        Returns:
+            List of WorkloadResult objects in the same order as ``prompts``.
+            Backend failures still degrade to a result whose ``output``
+            explains the failure (matching ``run()``); orchestration errors
+            raise RuntimeError identifying the failing item index.
+        """
+        return self._orchestrator.run_concurrent(
+            prompts=list(prompts),
+            task=task,
+            privacy=privacy,
+            max_concurrency=max_concurrency,
+        )
+
+    def complete_batch(
+        self,
+        prompts,
+        task: str = "question_answering",
+        privacy: str = "low",
+        max_concurrency: int = 4,
+    ):
+        """Alias for :meth:`run_concurrent` for batch-completion callers."""
+        return self.run_concurrent(
+            prompts=prompts,
+            task=task,
+            privacy=privacy,
+            max_concurrency=max_concurrency,
+        )
+
     def plan(self, task: str):
         """
         Generate an execution plan without running the task.

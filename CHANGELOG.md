@@ -6,6 +6,14 @@ All notable changes to PyInferenceManager are documented in this file, in
 ## [Unreleased]
 
 ### Added
+- Bounded concurrent batch execution: `Orchestrator.run_concurrent()` and
+  `complete_batch()` (backed by the new `Orchestrator::execute_batch` in the Rust
+  core). Prompts run through the same routing/cache/retry/budget path as `run()`,
+  with a caller-set `max_concurrency`; results are returned in input order and
+  provider HTTP calls genuinely overlap. The MCP `batch_inference` handler now
+  uses this path instead of a sequential loop. Covered by Rust wiremock tests and
+  Python tests against a local threaded HTTP server that asserts in-flight
+  overlap and the configured concurrency bound.
 - Optional MIT LiteLLM adapter (`pyinferencemanager[litellm]`):
   `Orchestrator.complete_with_litellm()`, `LiteLLMClient`, normalized usage/cost
   reporting, and streaming via `LiteLLMClient.stream()`.

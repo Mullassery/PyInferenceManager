@@ -302,21 +302,26 @@ class PyInferenceManagerMCPHandler:
 
     async def batch_inference(self, model_name: str, prompts: List[str],
                              batch_size: int = 10) -> Dict[str, Any]:
+        # Real bounded concurrency: batch_size is the maximum number of
+        # prompts in flight at once, not just a sequential loop counter.
+        results = self._orchestrator.run_concurrent(
+            prompts,
+            task=model_name,
+            max_concurrency=max(1, batch_size),
+        )
+
         total_tokens = 0
         total_cost = 0.0
         total_latency_ms = 0
-        completed = 0
-        for prompt in prompts:
-            result = self._orchestrator.run(task=model_name, message=prompt)
+        for result in results:
             total_tokens += result.total_tokens
             total_cost += result.total_cost_usd
             total_latency_ms += result.total_latency_ms
-            completed += 1
 
         return {
             "model": model_name,
             "total_requests": len(prompts),
-            "completed": completed,
+            "completed": len(results),
             "total_tokens": total_tokens,
             "total_cost_usd": total_cost,
             "total_latency_ms": total_latency_ms,

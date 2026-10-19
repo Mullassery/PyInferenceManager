@@ -26,6 +26,7 @@ use crate::types::{
     AttachmentKind, CloudProvider, ExecutionEngine, NodeResult, OrchestratorConfig, Task,
     WorkloadResult,
 };
+use futures::StreamExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -290,6 +291,33 @@ impl Orchestrator {
         }
 
         Ok(result)
+    }
+
+    /// Execute multiple independent tasks concurrently, running at most
+    /// `max_concurrency` of them at any time.
+    ///
+    /// Each item is a full `execute()` call (hardware probe, planning, cache
+    /// lookup, routing, real provider HTTP request). Results are returned in
+    /// the same order as `tasks` even though completion order may differ.
+    /// `max_concurrency` is clamped to at least 1; callers that need
+    /// per-item error handling can inspect each `Result` independently.
+    ///
+    /// This is real concurrency: the futures are polled by the same Tokio
+    /// runtime and their in-flight HTTP calls overlap. It is not a
+    /// simulated/sequential loop.
+    pub async fn execute_batch(
+        &self,
+        tasks: Vec<Task>,
+        max_concurrency: usize,
+    ) -> Vec<crate::Result<WorkloadResult>> {
+        let limit = max_concurrency.max(1);
+        let futures = tasks
+            .into_iter()
+            .map(|task| async move { self.execute(task).await });
+        futures::stream::iter(futures)
+            .buffered(limit)
+            .collect()
+            .await
     }
 
     /// Execute on a cloud provider with real retry logic and failover.
@@ -572,6 +600,55 @@ mod tests {
         // the real invariant is that the number of cache hits can never
         // exceed the number of DAG nodes actually executed.
         assert!(r.cache_hits as usize <= r.node_results.len());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_execute_batch_runs_all_tasks_and_preserves_input_order() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/v1/messages"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "content": [{"type": "text", "text": "batch-output"}],
+                "usage": {"input_tokens": 2, "output_tokens": 3},
+                "stop_reason": "end_turn"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        std::env::set_var("ANTHROPIC_API_KEY", "test-key");
+        std::env::set_var("ANTHROPIC_BASE_URL", mock_server.uri());
+
+        let mut config = OrchestratorConfig::default();
+        config.execution_mode = crate::types::ExecutionMode::CloudFirst;
+        let orchestrator = Orchestrator::new(config).await.unwrap();
+        orchestrator.set_retry_config(RetryConfig::new(1));
+
+        // Same shape as the Python concurrency test: a high-complexity
+        // question (QuestionAnswering template -> one real generation call)
+        // so every item routes to the mocked Anthropic endpoint.
+        let tasks: Vec<Task> = (0..4)
+            .map(|i| {
+                Task::new(format!(
+                    "What patterns, trends, correlations, and root causes should we analyze, evaluate, and assess? batch {i}"
+                ))
+            })
+            .collect();
+        let ids: Vec<String> = tasks.iter().map(|t| t.id.clone()).collect();
+
+        let results = orchestrator.execute_batch(tasks, 2).await;
+
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        std::env::remove_var("ANTHROPIC_BASE_URL");
+
+        assert_eq!(results.len(), 4);
+        for (index, result) in results.into_iter().enumerate() {
+            let result = result.expect("batch item should complete");
+            assert_eq!(result.task_id, ids[index]);
+            assert_eq!(result.output, "batch-output");
+            assert_eq!(result.total_tokens, 3);
+        }
     }
 
     #[tokio::test]

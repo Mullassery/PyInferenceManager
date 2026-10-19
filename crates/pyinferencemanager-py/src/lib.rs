@@ -279,6 +279,92 @@ impl PyOrchestrator {
         })
     }
 
+    /// Execute multiple prompts concurrently, running at most
+    /// `max_concurrency` requests at once. Each prompt becomes its own task
+    /// with `task` as the task description and the prompt as a raw-text
+    /// message, so routing/caching/retry/budget behavior is the same as
+    /// `run()`. Results are returned in the same order as `prompts`.
+    ///
+    /// This is real concurrent execution (in-flight provider HTTP calls
+    /// overlap), not a sequential loop. Backend failures still degrade to a
+    /// result whose `output` explains the failure, matching `run()`;
+    /// orchestration errors raise `RuntimeError` with the failing index.
+    #[pyo3(signature = (prompts, task="question_answering", privacy="low", max_concurrency=4))]
+    pub fn run_concurrent(
+        &self,
+        py: Python<'_>,
+        prompts: Vec<String>,
+        task: &str,
+        privacy: &str,
+        max_concurrency: usize,
+    ) -> PyResult<Vec<PyWorkloadResult>> {
+        use pyinferencemanager_core::types::{
+            Attachment, AttachmentKind, PrivacyLevel, Task, TaskOptions,
+        };
+
+        if max_concurrency == 0 {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "max_concurrency must be at least 1",
+            ));
+        }
+
+        let privacy_level = match privacy {
+            "high" => PrivacyLevel::High,
+            "low" => PrivacyLevel::Low,
+            _ => {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    "privacy must be 'high' or 'low'",
+                ))
+            }
+        };
+
+        let task_owned = task.to_string();
+        let batch: Vec<Task> = prompts
+            .into_iter()
+            .map(|prompt| {
+                let attachment = Attachment {
+                    kind: AttachmentKind::RawText,
+                    content: prompt.into_bytes(),
+                    mime_type: "text/plain".to_string(),
+                    name: "message".to_string(),
+                };
+                Task::new(task_owned.clone())
+                    .with_options(TaskOptions {
+                        privacy: privacy_level.clone(),
+                        ..Default::default()
+                    })
+                    .with_attachment(attachment)
+            })
+            .collect();
+
+        let inner = self.inner.clone();
+
+        py.detach(move || {
+            let orchestrator = inner.lock().map_err(|_| {
+                PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                    "Failed to acquire orchestrator lock",
+                )
+            })?;
+
+            let results = self
+                .runtime
+                .block_on(orchestrator.execute_batch(batch, max_concurrency));
+
+            let mut output = Vec::with_capacity(results.len());
+            for (index, result) in results.into_iter().enumerate() {
+                match result {
+                    Ok(result) => output.push(PyWorkloadResult { inner: result }),
+                    Err(e) => {
+                        return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                            "batch item {index} failed: {e}"
+                        )))
+                    }
+                }
+            }
+            Ok(output)
+        })
+    }
+
     pub fn plan(&self, py: Python<'_>, task: &str) -> PyResult<PyExecutionPlan> {
         use pyinferencemanager_core::types::Task;
 
