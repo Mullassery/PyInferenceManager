@@ -231,6 +231,16 @@ spend caps, and retry/health tracking as first-class, tested behavior.
   fails on 9 pre-existing files. See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for exact
   file:line locations and the full technical-debt list.
 
+## Known issues and deferred work
+
+**Blocked / failed:**
+- Async/streaming API and provider-parity live tests.
+
+**Rejected / deferred:**
+- Proxy server or spend dashboard; LiteLLM owns it.
+
+Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Queue status
 
 Shipped, blocked/failed, and rejected work for this repository is documented in
