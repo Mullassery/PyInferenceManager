@@ -231,6 +231,11 @@ spend caps, and retry/health tracking as first-class, tested behavior.
   fails on 9 pre-existing files. See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for exact
   file:line locations and the full technical-debt list.
 
+## Queue status
+
+Shipped, blocked/failed, and rejected work for this repository is documented in
+[`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup and PR expectations, and
