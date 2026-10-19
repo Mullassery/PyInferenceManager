@@ -76,6 +76,13 @@ impl PyBackendKind {
         }
     }
 
+    #[staticmethod]
+    fn openrouter() -> Self {
+        PyBackendKind {
+            inner: BackendKind::OpenRouter,
+        }
+    }
+
     fn as_str(&self) -> String {
         self.inner.as_str().to_string()
     }
@@ -489,6 +496,7 @@ impl PyOrchestrator {
             "tensorrt_llm".to_string(),
             "mlc_llm".to_string(),
             "colibri".to_string(),
+            "openrouter".to_string(),
         ])
     }
 

@@ -508,6 +508,11 @@ fn default_cost_per_1k_output(provider: &CloudProvider) -> f32 {
             "gemini-1.5-flash" => 0.0003,
             _ => 0.0003,
         },
+        CloudProvider::OpenRouter { model } => match model.as_str() {
+            // OpenRouter is a meta-provider; pricing varies by the underlying
+            // model. Use a conservative mid-range default.
+            _ => 0.001,
+        },
         _ => 0.001,
     }
 }

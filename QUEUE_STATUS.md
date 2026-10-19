@@ -4,6 +4,7 @@ This file records what was shipped, what is blocked/failed, and what is rejected
 
 ## Shipped
 - No code changes; audit/bundle docs added.
+- Optional LiteLLM adapter (`complete_with_litellm`, streaming) and native OpenRouter backend.
 
 ## Blocked / failed
 - Async/streaming API and provider-parity live tests.

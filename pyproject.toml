@@ -47,6 +47,7 @@ Issues = "https://github.com/Mullassery/pyinferencemanager/issues"
 Changelog = "https://github.com/Mullassery/pyinferencemanager/releases"
 
 [project.optional-dependencies]
+litellm = ["litellm>=1.50"]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "maturin>=1.0", "ruff>=0.5.0"]
 
 [tool.maturin]

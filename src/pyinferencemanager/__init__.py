@@ -1,4 +1,5 @@
 from ._core import __version__, PyOrchestrator
+from .litellm_adapter import LiteLLMClient, LiteLLMResult, LiteLLMUnavailable, complete as litellm_complete
 
 class Orchestrator:
     """
@@ -154,6 +155,29 @@ class Orchestrator:
             num_requests=num_requests, budget_usd=budget_usd
         )
 
+    def complete_with_litellm(
+        self,
+        model: str,
+        prompt,
+        *,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+        **kwargs,
+    ):
+        """Complete a request through the optional LiteLLM adapter.
+
+        This bypasses the native routing/budget engine and is intended for
+        providers/models that the native backends do not support.  Install
+        with `pip install "pyinferencemanager[litellm]"`.
+        """
+        return LiteLLMClient().complete(
+            model,
+            prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            **kwargs,
+        )
+
     def profile_hardware(self):
         """
         Profile local hardware (memory tier, Apple Silicon/Metal detection,
@@ -169,4 +193,11 @@ class Orchestrator:
         return repr(self._orchestrator)
 
 
-__all__ = ["__version__", "Orchestrator"]
+__all__ = [
+    "__version__",
+    "Orchestrator",
+    "LiteLLMClient",
+    "LiteLLMResult",
+    "LiteLLMUnavailable",
+    "litellm_complete",
+]

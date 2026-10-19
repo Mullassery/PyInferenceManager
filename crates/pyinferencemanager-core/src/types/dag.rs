@@ -17,6 +17,7 @@ pub enum CloudProvider {
     Anthropic { model: String },
     OpenAI { model: String },
     Gemini { model: String },
+    OpenRouter { model: String },
 }
 
 impl CloudProvider {
@@ -35,6 +36,7 @@ impl CloudProvider {
             CloudProvider::Anthropic { .. } => BackendKind::Anthropic,
             CloudProvider::OpenAI { .. } => BackendKind::OpenAi,
             CloudProvider::Gemini { .. } => BackendKind::Gemini,
+            CloudProvider::OpenRouter { .. } => BackendKind::OpenRouter,
         }
     }
 
@@ -42,7 +44,8 @@ impl CloudProvider {
         match self {
             CloudProvider::Anthropic { model }
             | CloudProvider::OpenAI { model }
-            | CloudProvider::Gemini { model } => model,
+            | CloudProvider::Gemini { model }
+            | CloudProvider::OpenRouter { model } => model,
         }
     }
 }
@@ -208,6 +211,13 @@ mod tests {
             }
             .kind(),
             BackendKind::Gemini
+        );
+        assert_eq!(
+            CloudProvider::OpenRouter {
+                model: "openrouter/auto".to_string()
+            }
+            .kind(),
+            BackendKind::OpenRouter
         );
     }
 

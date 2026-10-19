@@ -69,6 +69,7 @@ impl RealLoadTester {
                 CloudProvider::Anthropic { .. } => "anthropic".to_string(),
                 CloudProvider::OpenAI { .. } => "openai".to_string(),
                 CloudProvider::Gemini { .. } => "gemini".to_string(),
+                CloudProvider::OpenRouter { .. } => "openrouter".to_string(),
             };
             dynamic_router.register_provider(provider_name);
         }

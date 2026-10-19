@@ -5,6 +5,13 @@ All notable changes to PyInferenceManager are documented in this file, in
 
 ## [Unreleased]
 
+### Added
+- Optional MIT LiteLLM adapter (`pyinferencemanager[litellm]`):
+  `Orchestrator.complete_with_litellm()`, `LiteLLMClient`, normalized usage/cost
+  reporting, and streaming via `LiteLLMClient.stream()`.
+- Native OpenRouter backend (`OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`) through
+  the existing `CloudProvider`/`BackendKind` dispatch.
+
 ## [1.3.2] - 2026-10-18
 
 ### Security

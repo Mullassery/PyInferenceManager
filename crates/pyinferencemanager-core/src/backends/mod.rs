@@ -6,6 +6,7 @@ pub mod colibri_backend;
 pub mod gemini_backend;
 pub mod ollama_backend;
 pub mod openai_backend;
+pub mod openrouter_backend;
 pub mod stub_backend;
 pub mod vllm_backend;
 
@@ -14,6 +15,7 @@ pub use colibri_backend::ColibriBackend;
 pub use gemini_backend::GeminiBackend;
 pub use ollama_backend::OllamaBackend;
 pub use openai_backend::OpenAiBackend;
+pub use openrouter_backend::OpenRouterBackend;
 pub use stub_backend::StubBackend;
 pub use vllm_backend::VLlmBackend;
 
@@ -27,6 +29,7 @@ pub enum BackendKind {
     TensorRtLlm,
     MlcLlm,
     Colibri,
+    OpenRouter,
 }
 
 impl BackendKind {
@@ -40,6 +43,7 @@ impl BackendKind {
             BackendKind::TensorRtLlm => "tensorrt_llm",
             BackendKind::MlcLlm => "mlc_llm",
             BackendKind::Colibri => "colibri",
+            BackendKind::OpenRouter => "openrouter",
         }
     }
 }
@@ -111,6 +115,7 @@ pub enum AnyBackend {
     TensorRtLlm(StubBackend),
     MlcLlm(StubBackend),
     Colibri(ColibriBackend),
+    OpenRouter(OpenRouterBackend),
 }
 
 impl AnyBackend {
@@ -124,6 +129,7 @@ impl AnyBackend {
             AnyBackend::TensorRtLlm(b) => b.infer(request).await,
             AnyBackend::MlcLlm(b) => b.infer(request).await,
             AnyBackend::Colibri(b) => b.infer(request).await,
+            AnyBackend::OpenRouter(b) => b.infer(request).await,
         }
     }
 
@@ -137,6 +143,7 @@ impl AnyBackend {
             AnyBackend::TensorRtLlm(b) => b.estimate_cost(profile),
             AnyBackend::MlcLlm(b) => b.estimate_cost(profile),
             AnyBackend::Colibri(b) => b.estimate_cost(profile),
+            AnyBackend::OpenRouter(b) => b.estimate_cost(profile),
         }
     }
 
@@ -150,6 +157,7 @@ impl AnyBackend {
             AnyBackend::TensorRtLlm(b) => b.estimate_latency(profile),
             AnyBackend::MlcLlm(b) => b.estimate_latency(profile),
             AnyBackend::Colibri(b) => b.estimate_latency(profile),
+            AnyBackend::OpenRouter(b) => b.estimate_latency(profile),
         }
     }
 
@@ -163,6 +171,7 @@ impl AnyBackend {
             AnyBackend::TensorRtLlm(b) => b.kind(),
             AnyBackend::MlcLlm(b) => b.kind(),
             AnyBackend::Colibri(b) => b.kind(),
+            AnyBackend::OpenRouter(b) => b.kind(),
         }
     }
 }
@@ -207,6 +216,7 @@ mod tests {
         assert_eq!(BackendKind::OpenAi.as_str(), "openai");
         assert_eq!(BackendKind::Ollama.as_str(), "ollama");
         assert_eq!(BackendKind::Colibri.as_str(), "colibri");
+        assert_eq!(BackendKind::OpenRouter.as_str(), "openrouter");
     }
 
     #[test]

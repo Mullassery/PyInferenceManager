@@ -46,9 +46,9 @@ list.
 
 ## What it is not
 
-- **Not a broad provider marketplace.** There are 5 live backends (Anthropic, OpenAI,
-  Gemini, Ollama, vLLM); `tensorrt_llm`, `mlc_llm`, and `colibri` are cost-estimator-only
-  stubs with real estimation logic but no live inference.
+- **Not a broad provider marketplace.** There are 6 live backends (Anthropic, OpenAI,
+  Gemini, OpenRouter, Ollama, vLLM); `tensorrt_llm`, `mlc_llm`, and `colibri` are
+  cost-estimator-only stubs with real estimation logic but no live inference.
 - **Not async.** The Python API is sync-only; there is no `run()` async variant.
 - **Not a proxy server or spend dashboard.** It's a library, narrower in scope than LiteLLM.
 - **Not a substitute for the providers' own SDKs.** The Rust core makes HTTP calls directly;
@@ -142,6 +142,33 @@ orchestrator.available_backends()
 
 See [`examples/`](examples/) for runnable scripts covering each of these.
 
+### Optional LiteLLM adapter (long-tail providers)
+
+The native Rust backends cover the common providers. For the long tail,
+install the optional [LiteLLM](https://github.com/BerriAI/litellm) adapter
+(MIT core; never the `enterprise/` package) and call it explicitly. This path
+does not replace native routing/budget enforcement:
+
+```bash
+pip install "pyinferencemanager[litellm]"
+```
+
+```python
+from pyinferencemanager import Orchestrator
+
+orch = Orchestrator()
+result = orch.complete_with_litellm(
+    "groq/llama-3.3-70b-versatile",
+    "Summarize this incident in one sentence.",
+    max_tokens=80,
+)
+print(result.output, result.total_tokens, result.cost_usd)
+```
+
+A list of message dicts and streaming via `LiteLLMClient.stream()` are also
+supported. Missing LiteLLM raises an actionable `LiteLLMUnavailable` error
+rather than silently falling back.
+
 ### Providers
 
 Real HTTP calls, with retry/backoff and cost tracking:
@@ -151,6 +178,7 @@ Real HTTP calls, with retry/backoff and cost tracking:
 | Anthropic Claude | `ANTHROPIC_API_KEY` | `claude-haiku-4-5`, `claude-opus-4-1` |
 | OpenAI | `OPENAI_API_KEY` | `gpt-4o-mini` |
 | Google Gemini | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | `gemini-1.5-flash` |
+| OpenRouter | `OPENROUTER_API_KEY` | Meta-provider via an OpenAI-compatible API; `OPENROUTER_BASE_URL` overrides the endpoint |
 | Ollama (local) | — | whatever models you've pulled locally |
 | vLLM (local) | — | OpenAI-compatible endpoint, default `localhost:8000` |
 

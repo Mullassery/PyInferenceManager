@@ -178,6 +178,8 @@ impl ApiExecutor {
                         "GEMINI_API_KEY (or GOOGLE_API_KEY) not set".to_string(),
                     )
                 })?,
+            CloudProvider::OpenRouter { .. } => std::env::var("OPENROUTER_API_KEY")
+                .map_err(|_| crate::Error::CloudError("OPENROUTER_API_KEY not set".to_string()))?,
         };
 
         // Simulate API call

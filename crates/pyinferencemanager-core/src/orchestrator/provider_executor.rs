@@ -1,6 +1,6 @@
 use crate::backends::{
     AnthropicBackend, AnyBackend, BackendKind, BackendRegistry, GeminiBackend, InferenceRequest,
-    OpenAiBackend,
+    OpenAiBackend, OpenRouterBackend,
 };
 use crate::error_classifier::ErrorClassifier;
 use crate::types::CloudProvider;
@@ -87,6 +87,16 @@ impl ProviderExecutor {
                         )
                     })?;
                 registry.register(kind, AnyBackend::Gemini(GeminiBackend::new(api_key)));
+                Ok(())
+            }
+            BackendKind::OpenRouter => {
+                let api_key = std::env::var("OPENROUTER_API_KEY").map_err(|_| {
+                    crate::Error::CloudError("OPENROUTER_API_KEY not set".to_string())
+                })?;
+                registry.register(
+                    kind,
+                    AnyBackend::OpenRouter(OpenRouterBackend::new(api_key)),
+                );
                 Ok(())
             }
             other => Err(crate::Error::CloudError(format!(
@@ -217,6 +227,29 @@ mod tests {
         std::env::remove_var("GOOGLE_API_KEY");
         assert!(result.is_ok());
         assert!(registry.get(BackendKind::Gemini).is_some());
+    }
+
+    #[test]
+    #[serial]
+    fn test_register_backend_missing_openrouter_key_matches_original_message() {
+        std::env::remove_var("OPENROUTER_API_KEY");
+        let mut registry = BackendRegistry::new();
+        let err = match ProviderExecutor::register_backend(&mut registry, BackendKind::OpenRouter) {
+            Ok(_) => panic!("expected missing-key error"),
+            Err(e) => e,
+        };
+        assert_eq!(err.to_string(), "Cloud error: OPENROUTER_API_KEY not set");
+    }
+
+    #[test]
+    #[serial]
+    fn test_register_backend_openrouter_registers_successfully() {
+        std::env::set_var("OPENROUTER_API_KEY", "test-key");
+        let mut registry = BackendRegistry::new();
+        let result = ProviderExecutor::register_backend(&mut registry, BackendKind::OpenRouter);
+        std::env::remove_var("OPENROUTER_API_KEY");
+        assert!(result.is_ok());
+        assert!(registry.get(BackendKind::OpenRouter).is_some());
     }
 
     #[test]
