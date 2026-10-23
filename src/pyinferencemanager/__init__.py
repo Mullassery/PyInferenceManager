@@ -1,6 +1,13 @@
 import asyncio
 
-from ._core import PyOrchestrator, __version__
+from ._core import (
+    PyBackendKind as BackendKind,
+    PyExecutionPlan as ExecutionPlan,
+    PyHardwareProfile as HardwareProfile,
+    PyOrchestrator,
+    PyWorkloadResult as WorkloadResult,
+    __version__,
+)
 from .litellm_adapter import LiteLLMClient, LiteLLMResult, LiteLLMUnavailable
 from .litellm_adapter import complete as litellm_complete
 
@@ -324,10 +331,14 @@ class Orchestrator:
 
 
 __all__ = [
+    "BackendKind",
+    "ExecutionPlan",
+    "HardwareProfile",
     "LiteLLMClient",
     "LiteLLMResult",
     "LiteLLMUnavailable",
     "Orchestrator",
+    "WorkloadResult",
     "__version__",
     "litellm_complete",
 ]
