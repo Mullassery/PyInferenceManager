@@ -210,7 +210,22 @@ impl RealLoadTester {
     }
 }
 
-// Simple RNG for testing (deterministic with seed)
+#[cfg(test)]
+mod test_rng {
+    use std::cell::Cell;
+    thread_local! {
+        static COUNTER: Cell<u64> = const { Cell::new(12345) };
+    }
+    pub fn next_u32() -> u32 {
+        COUNTER.with(|c| {
+            let v = c.get();
+            c.set(v.wrapping_mul(1103515245).wrapping_add(12345));
+            ((v >> 16) & 0x7fff) as u32
+        })
+    }
+}
+
+#[cfg(not(test))]
 fn rand_bool(probability: f32) -> bool {
     (std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -220,14 +235,28 @@ fn rand_bool(probability: f32) -> bool {
         < probability
 }
 
+#[cfg(test)]
+fn rand_bool(probability: f32) -> bool {
+    ((test_rng::next_u32() as f32) / 32768.0) < probability
+}
+
+#[cfg(not(test))]
 fn rand_u64(min: u64, max: u64) -> u64 {
+    let range = if max > min { max - min } else { 1 };
     min + (std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .subsec_nanos() as u64
-        % (max - min))
+        % range)
 }
 
+#[cfg(test)]
+fn rand_u64(min: u64, max: u64) -> u64 {
+    let range = if max > min { max - min } else { 1 };
+    min + (test_rng::next_u32() as u64 % range)
+}
+
+#[cfg(not(test))]
 fn rand_f32(min: f32, max: f32) -> f32 {
     min + ((std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -235,6 +264,11 @@ fn rand_f32(min: f32, max: f32) -> f32 {
         .subsec_nanos() as f32
         / 1_000_000_000.0)
         * (max - min))
+}
+
+#[cfg(test)]
+fn rand_f32(min: f32, max: f32) -> f32 {
+    min + ((test_rng::next_u32() as f32 / 32768.0) * (max - min))
 }
 
 #[cfg(test)]
