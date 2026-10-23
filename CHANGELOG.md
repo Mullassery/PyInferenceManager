@@ -32,6 +32,11 @@ All notable changes to PyInferenceManager are documented in this file, in
 ### Fixed
 - `fallback_routing` now actually tries `fallback_models` in order (primary first) and reports `used_model`/`attempted_models`, instead of accepting the list and ignoring it.
 
+## [1.3.3] - 2026-10-23
+
+### Added
+- Exported native backend and workload types from the public package.
+
 ## [1.3.2] - 2026-10-18
 
 ### Security
