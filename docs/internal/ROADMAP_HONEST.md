@@ -59,8 +59,8 @@ provider/feature table. This file focuses on debt and gaps, not the pitch.
    pending that separate triage).
 2. ~~**`cargo fmt --check` fails**~~ — **Fixed 2026-09-21.** Ran `cargo fmt
    --all` across the 9 flagged files (formatting only, no behavior change);
-   `cargo fmt --all -- --check` now exits 0. `tests.yml` still has no
-   formatting-check CI step — that part of the gap remains open.
+   `cargo fmt --all -- --check` now exits 0, and `tests.yml` runs it as a
+   blocking CI step.
 3. ~~**Deprecated PyO3 API usage**~~ — **Fixed 2026-09-21.** All 5
    `PyDict::new_bound` call sites in
    `crates/pyinferencemanager-py/src/lib.rs` (lines 297, 299, 343, 409, 510)
