@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before filing: check [ROADMAP_HONEST.md](https://github.com/Mullassery/PyInferenceManager/blob/main/ROADMAP_HONEST.md)
+        Before filing: check [docs/internal/ROADMAP_HONEST.md](https://github.com/Mullassery/PyInferenceManager/blob/main/docs/internal/ROADMAP_HONEST.md)
         and the README's "Known issues" section — your bug might already be a
         documented, understood limitation (e.g. the `tensorrt_llm`/`mlc_llm`/`colibri`
         stub backends not making real calls is expected, not a bug).
@@ -55,7 +55,7 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: I checked ROADMAP_HONEST.md and the README's Known Issues section first
+        - label: I checked docs/internal/ROADMAP_HONEST.md and the README's Known Issues section first
           required: true
         - label: I can reproduce this consistently (or noted in the report that it's intermittent)
           required: true

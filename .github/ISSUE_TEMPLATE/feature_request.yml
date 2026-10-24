@@ -37,5 +37,5 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: I checked README.md and ROADMAP_HONEST.md to confirm this doesn't already exist
+        - label: I checked README.md and docs/internal/ROADMAP_HONEST.md to confirm this doesn't already exist
           required: true

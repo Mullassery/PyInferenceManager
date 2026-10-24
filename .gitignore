@@ -52,7 +52,7 @@ target/
 # extension module, not a pure library) — do not add it here. It was
 # previously listed here despite being tracked, which is a landmine: a
 # `git rm --cached Cargo.lock` or clone-and-re-add would have silently
-# failed to restore it. See ROADMAP_HONEST.md history.
+# failed to restore it. See docs/internal/ROADMAP_HONEST.md history.
 
 # Temp files
 *.tmp
