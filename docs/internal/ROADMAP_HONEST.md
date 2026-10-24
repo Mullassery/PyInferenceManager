@@ -41,15 +41,10 @@ provider/feature table. This file focuses on debt and gaps, not the pitch.
   can list them honestly and `plan()` can estimate cost against them, not
   because they work. Already disclosed in README; repeated here because it's
   the most important "not built" fact about this project.
-- `crates/pyinferencemanager-core/src/planner/parallel.rs` (13 lines): a
-  `ParallelAnalyzer` struct with a `new()`/`Default` impl and **zero other
-  references anywhere in the codebase** (verified: `grep -rn
-  ParallelAnalyzer crates` matches only its own definition). This is dead,
-  unused placeholder code — the real parallel-stage execution logic lives in
-  `types/dag.rs`'s execution-stage builder and the orchestrator's
-  `tokio::join_all` usage, not here. Should be deleted or actually wired up;
-  currently it's neither. **Trivial, safe to fix in a future session** (pure
-  deletion, zero call sites to update).
+- ~~`crates/pyinferencemanager-core/src/planner/parallel.rs`~~ — **Deleted
+  2026-10-25.** Confirmed zero non-definition references before deleting; the
+  real parallel-stage execution logic lives in `types/dag.rs` and the
+  orchestrator's `tokio::join_all`. The module declaration is gone too.
 
 ## Bugs and gaps found during this pass
 
@@ -71,18 +66,14 @@ provider/feature table. This file focuses on debt and gaps, not the pitch.
    `crates/pyinferencemanager-py/src/lib.rs` (lines 297, 299, 343, 409, 510)
    now use `PyDict::new`, matching pyo3 0.23's current API.
 4. **Dead/unused struct fields** flagged by `cargo build` (not clippy):
-   - `level: String` on `StructuredLogger`
-     (`observability/logging.rs:10`) — never read.
-   - `update_interval_ms: u64` on `DynamicRouter`
-     (`optimizer/dynamic_router.rs:44`) — never read.
-   - `rate_limit_delay_ms: u64` on `ApiExecutor`
-     (`orchestrator/api_executor.rs:14`) — never read, which means
-     configured rate-limit delay is **not actually applied** anywhere in the
-     executor despite the field existing. This is the concerning one — it
-     suggests a half-wired feature (rate limiting present in shape, absent
-     in behavior). **Warrants a dedicated follow-up** to confirm whether
-     rate limiting is meant to be enforced and, if so, wire it in; if not,
-     remove the dead field so it stops implying a feature that doesn't exist.
+   - ~~`rate_limit_delay_ms: u64` on `ApiExecutor`~~ — **Wired 2026-10-25.**
+     `execute_with_retry` now sleeps for the configured delay before every
+     attempt (and still honors the caller's shared `RateLimiter`), so the
+     configuration is no longer silently ignored.
+   - `level: String` on `StructuredLogger` and `update_interval_ms` on
+     `DynamicRouter` now have real getters (`level()`,
+     `update_interval_ms()`/`set_update_interval_ms()`), clearing their
+     dead-field warnings without deleting configuration state.
    - `dynamic_router: Option<DynamicRouter>` on `ProviderLoadTester`
      (`orchestrator/provider_load_test.rs:70`) — never read; same
      "half-wired" shape as above, lower stakes since it's in the load-test
@@ -144,9 +135,8 @@ diagram of the actual request flow.
 
 ## CI gaps
 
-- No formatting check (`cargo fmt --check`) — see bug #2 above. Note: the
-  underlying `cargo fmt --check` failure itself was fixed 2026-09-21; a CI
-  step to keep it that way still doesn't exist.
+- ~~No formatting check (`cargo fmt --check`)~~ — **Added 2026-10-25** as a
+  blocking `Check formatting` step in `.github/workflows/tests.yml`.
 - Clippy step has `continue-on-error: true`. It no longer masks compile
   errors (bug #1 fixed 2026-09-21) but still masks 71 real warnings, and the
   flag has not been removed pending a triage of those.

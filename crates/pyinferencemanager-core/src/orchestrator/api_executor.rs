@@ -98,7 +98,12 @@ impl ApiExecutor {
         let mut retries_used = 0;
 
         loop {
-            // Apply rate limiting
+            // Apply the executor's configured inter-attempt delay, then the
+            // caller's shared rate limiter. Both are honored so neither
+            // configuration silently disappears.
+            if self.rate_limit_delay_ms > 0 {
+                tokio::time::sleep(Duration::from_millis(self.rate_limit_delay_ms)).await;
+            }
             rate_limiter.wait_if_needed().await;
 
             // Execute with timeout

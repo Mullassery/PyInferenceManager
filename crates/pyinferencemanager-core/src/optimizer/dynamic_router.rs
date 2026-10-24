@@ -53,6 +53,14 @@ impl DynamicRouter {
         }
     }
 
+    pub fn update_interval_ms(&self) -> u64 {
+        self.update_interval_ms
+    }
+
+    pub fn set_update_interval_ms(&mut self, update_interval_ms: u64) {
+        self.update_interval_ms = update_interval_ms;
+    }
+
     pub fn register_provider(&mut self, name: String) {
         self.providers
             .insert(name.clone(), ProviderPerformance::new(name));

@@ -51,6 +51,10 @@ impl StructuredLogger {
         })
     }
 
+    pub fn level(&self) -> &str {
+        &self.level
+    }
+
     pub fn info(&self, message: &str) {
         tracing::info!("{}", message);
     }
