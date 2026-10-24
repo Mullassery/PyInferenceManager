@@ -56,7 +56,9 @@ starts, and record the decision in the PR or changelog.
 
 ## OSS gap analysis — 2026-10-24
 
-**Scope.** Covers PyInferenceManager v1.3.3 as implemented here: complexity,
+**What matters most here:** streaming and a drop-in proxy. Blocking request/response and in-process-only routing rule out chat and existing OpenAI clients; add streaming and an OpenAI-compatible endpoint before richer routing.
+
+Scope: Covers PyInferenceManager v1.3.3 as implemented here: complexity,
 privacy, cost, and hardware-aware routing across local and cloud providers; hard
 budget caps; health-based retry; SQLite semantic caching; and the `Orchestrator`
 API. Compared with OSS routing gateways and routers.
