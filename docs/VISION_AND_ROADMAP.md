@@ -1,7 +1,7 @@
 > **Superseded.** This document describes an earlier, larger multi-project
 > vision that does not reflect the current single-package reality of this
 > repo. Kept for history. For the actual current status, gaps, and
-> technical debt, see [`ROADMAP_HONEST.md`](../ROADMAP_HONEST.md) at the
+> technical debt, see [`internal/ROADMAP_HONEST.md`](internal/ROADMAP_HONEST.md) at the
 > repo root.
 
 # PyInferenceManager: Vision & Roadmap

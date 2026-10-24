@@ -3,7 +3,7 @@
 > in the current code (`tests/test_mcp_connector_security.py` explicitly
 > asserts StatGuardian is *not* imported). Kept for history. For the actual
 > current status, gaps, and technical debt, see
-> [`ROADMAP_HONEST.md`](../ROADMAP_HONEST.md) at the repo root.
+> [`internal/ROADMAP_HONEST.md`](internal/ROADMAP_HONEST.md) at the repo root.
 
 # PyInferenceManager v2.0.0: Product Vision
 

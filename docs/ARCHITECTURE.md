@@ -22,7 +22,7 @@ verified against `crates/pyinferencemanager-core/src/` and
 | Module | Responsibility |
 |---|---|
 | `analyzer/` | Task complexity classification (`classifier.rs`, `complexity.rs`, `embedding_complexity.rs`) — decides how "hard" a task is, which feeds routing. |
-| `planner/` | Builds the execution DAG (`dag_builder.rs`), templates for common task shapes (`templates.rs`). `parallel.rs` is dead code — see [ROADMAP_HONEST.md](../ROADMAP_HONEST.md). |
+| `planner/` | Builds the execution DAG (`dag_builder.rs`), templates for common task shapes (`templates.rs`). `parallel.rs` is dead code — see [internal/ROADMAP_HONEST.md](internal/ROADMAP_HONEST.md). |
 | `router/` | Picks local vs. cloud execution (`execution_router.rs`) and among cloud providers (`multi_provider.rs`) based on complexity/privacy/cost/health. |
 | `hardware/` | Local hardware profiling (`profiler.rs`, `memory_map.rs`) and Ollama model discovery (`ollama_probe.rs`). |
 | `backends/` | One `RuntimeBackend` trait implementation per execution target: `anthropic_backend.rs`, `openai_backend.rs`, `gemini_backend.rs`, `ollama_backend.rs`, `vllm_backend.rs` (all real HTTP), and `colibri_backend.rs`/`stub_backend.rs` (cost-estimator-only stubs for `tensorrt_llm`/`mlc_llm`/`colibri`). |
@@ -81,7 +81,7 @@ Key properties this diagram is meant to make explicit:
 
 ## Known architectural debt
 
-See [ROADMAP_HONEST.md](../ROADMAP_HONEST.md) for the full list (dead code,
+See [internal/ROADMAP_HONEST.md](internal/ROADMAP_HONEST.md) for the full list (dead code,
 unused struct fields suggesting half-wired features, clippy/fmt CI gaps,
 untested modules). Not duplicated here to avoid the two documents drifting
 out of sync.

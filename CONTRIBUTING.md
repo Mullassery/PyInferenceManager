@@ -10,7 +10,7 @@ platform — response times and review bandwidth are limited accordingly.
   change), open an issue first to discuss the approach. This avoids wasted
   work on a PR that doesn't fit the project's direction.
 - Read [README.md](README.md) for what the project actually does today, and
-  [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for known gaps, bugs, and
+  [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) for known gaps, bugs, and
   technical debt — some of what looks like a bug may already be a documented,
   understood limitation.
 
@@ -49,11 +49,11 @@ Python interpreter at import time, not link time), not a project bug.
 
 - `cargo test --workspace` passes.
 - `cargo fmt` is applied (`cargo fmt --check` currently fails on pre-existing
-  files unrelated to most changes — see ROADMAP_HONEST.md — but please don't
+  files unrelated to most changes — see docs/internal/ROADMAP_HONEST.md — but please don't
   add to that list).
 - `cargo clippy --workspace --all-targets` — note this currently fails to
   *compile* on `main` due to 3 pre-existing lint errors in test code (see
-  ROADMAP_HONEST.md); this is not something your PR needs to fix, but please
+  docs/internal/ROADMAP_HONEST.md); this is not something your PR needs to fix, but please
   don't introduce new clippy errors in code you touch.
 - `pytest tests/` passes against a freshly `maturin develop`-built extension.
 - New backends/providers get real HTTP-mocked tests (see

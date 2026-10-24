@@ -175,7 +175,7 @@ print(f"Cache hits: {result.cache_hits}")
 
 ## 📄 License
 
-Proprietary License - See [LICENSE](LICENSE) for details
+Proprietary License - See [LICENSE](../LICENSE) for details
 
 ---
 

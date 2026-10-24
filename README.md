@@ -6,7 +6,6 @@
 [![PyPI](https://img.shields.io/pypi/v/pyinferencemanager)](https://pypi.org/project/pyinferencemanager/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
 [![Tests](https://img.shields.io/github/actions/workflow/status/Mullassery/PyInferenceManager/tests.yml?label=tests)](https://github.com/Mullassery/PyInferenceManager/actions)
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
 
 ## What it is
 
@@ -70,7 +69,7 @@ list.
 
 **Beta.** Version 1.3.0. Core routing, budget enforcement, retry, caching, and the 5 live
 backends are real and tested; the three stub backends and the pre-existing lint/format debt
-below are honest gaps. See [`ROADMAP_HONEST.md`](ROADMAP_HONEST.md) for the full, unhedged
+below are honest gaps. See [`docs/internal/ROADMAP_HONEST.md`](docs/internal/ROADMAP_HONEST.md) for the full, unhedged
 status. Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Installation
@@ -281,7 +280,7 @@ spend caps, and retry/health tracking as first-class, tested behavior.
 
 ## Documentation
 
-- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — the full, unhedged status: what's built, what's
+- [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) — the full, unhedged status: what's built, what's
   broken, what's untested, and concrete technical debt.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — module map and request-flow diagram.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, PR expectations.
@@ -300,7 +299,7 @@ spend caps, and retry/health tracking as first-class, tested behavior.
   `max_attempts=5`).
 - `cargo clippy --workspace --all-targets` does not currently compile (3 pre-existing hard
   errors in test code, masked by `continue-on-error: true` in CI) and `cargo fmt --check`
-  fails on 9 pre-existing files. See [ROADMAP_HONEST.md](ROADMAP_HONEST.md) for exact
+  fails on 9 pre-existing files. See [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) for exact
   file:line locations and the full technical-debt list.
 
 ## Known issues and deferred work
@@ -315,7 +314,7 @@ spend caps, and retry/health tracking as first-class, tested behavior.
 **Rejected / deferred:**
 - Proxy server or spend dashboard; LiteLLM owns it.
 
-Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+Full shipped/blocked/rejected detail: [`docs/internal/QUEUE_STATUS.md`](docs/internal/QUEUE_STATUS.md).
 
 ## Contributing
 

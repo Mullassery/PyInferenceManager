@@ -325,7 +325,7 @@ PyInferenceManager (Rust Core + Python Bindings)
 
 ## 📄 License & Attribution
 
-**License:** Proprietary - See [LICENSE](LICENSE) for details
+**License:** Proprietary - See [LICENSE](../LICENSE) for details
 
 **Built with:**
 - Rust (core engine)

@@ -55,7 +55,7 @@ All notable changes to PyInferenceManager are documented in this file, in
     Jaeger/Prometheus export and never used these crates.
 
 ### Added
-- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ROADMAP_HONEST.md`, GitHub issue
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `docs/internal/ROADMAP_HONEST.md`, GitHub issue
   templates, PR template, `.github/dependabot.yml` (cargo + pip +
   github-actions), and a `cargo audit` CI workflow
   (`.github/workflows/audit.yml`) as part of an OSS repo standardization
@@ -66,7 +66,7 @@ All notable changes to PyInferenceManager are documented in this file, in
 
 ### Changed
 - `docs/ROADMAP.md`, `docs/VISION_AND_ROADMAP.md`, `docs/PRODUCT_VISION.md`,
-  `docs/CLAUDE.md` marked as superseded by `ROADMAP_HONEST.md` (kept for
+  `docs/CLAUDE.md` marked as superseded by `docs/internal/ROADMAP_HONEST.md` (kept for
   history, not deleted).
 
 ### Fixed
@@ -99,7 +99,7 @@ All notable changes to PyInferenceManager are documented in this file, in
   `.github/workflows/tests.yml` was left in place since those warnings still
   need a separate triage pass).
 - `cargo fmt --check` now passes. Ran `cargo fmt --all` across the 9 files
-  flagged in `ROADMAP_HONEST.md` (formatting only, no behavior change).
+  flagged in `docs/internal/ROADMAP_HONEST.md` (formatting only, no behavior change).
 - Replaced 5 uses of the deprecated PyO3 `PyDict::new_bound` with `PyDict::new`
   in `crates/pyinferencemanager-py/src/lib.rs` (lines 297, 299, 343, 409, 510),
   matching pyo3 0.23's current (non-`_bound`) API.

@@ -29,7 +29,7 @@ tests/` (39 tests) — both suites passed in full at the time of this writing.
   default bind with scoped CORS (`_mcp_connector.py`) — both covered by
   passing tests, not just present in source.
 
-See [README.md](README.md) for the user-facing API and an honest
+See [README.md](../../README.md) for the user-facing API and an honest
 provider/feature table. This file focuses on debt and gaps, not the pitch.
 
 ## Not built / explicitly fake stubs

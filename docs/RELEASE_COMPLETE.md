@@ -351,7 +351,7 @@ Result (output, cost, latency, engines used)
 
 ## 📄 License
 
-Proprietary License - See [LICENSE](LICENSE) for details
+Proprietary License - See [LICENSE](../LICENSE) for details
 
 ---
 
