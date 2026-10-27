@@ -169,9 +169,9 @@ print(f"Cache hits: {result.cache_hits}")
 
 ## 📞 Support
 
-- **Issues:** https://github.com/Mullassery/pyinferencemanager/issues
-- **Discussions:** https://github.com/Mullassery/pyinferencemanager/discussions
-- **Documentation:** https://github.com/Mullassery/pyinferencemanager
+- **Issues:** ../pyinferencemanager/issues
+- **Discussions:** ../pyinferencemanager/discussions
+- **Documentation:** ../pyinferencemanager
 
 ## 📄 License
 

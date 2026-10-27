@@ -33,7 +33,7 @@
 
 ## GitHub Release Status
 
-✅ **Repository:** https://github.com/Mullassery/pyinferencemanager  
+✅ **Repository:** ../pyinferencemanager  
 ✅ **Latest Commit:** e3f4e35 (Bump version to 0.3.0)  
 ✅ **Tags:** v0.2.0, v0.3.0  
 ✅ **Branch:** main (production)  
@@ -221,11 +221,11 @@ print(f"Latency: {result.total_latency_ms}ms")
 
 ## GitHub Repository
 
-**URL:** https://github.com/Mullassery/pyinferencemanager
+**URL:** ../pyinferencemanager
 
 **Clone:**
 ```bash
-git clone https://github.com/Mullassery/pyinferencemanager.git
+git clone ../pyinferencemanager
 cd pyinferencemanager
 ```
 
@@ -254,6 +254,6 @@ maturin develop
 ---
 
 **Questions or issues?**  
-Visit: https://github.com/Mullassery/pyinferencemanager/issues
+Visit: ../pyinferencemanager/issues
 
 Built with ❤️ using Rust + Python + OpenTelemetry

@@ -20,7 +20,7 @@ Requires Rust (stable, see [`rust-toolchain.toml`](rust-toolchain.toml)) and
 Python 3.10+.
 
 ```bash
-git clone https://github.com/Mullassery/PyInferenceManager.git
+git clone ../PyInferenceManager
 cd PyInferenceManager
 
 # Rust

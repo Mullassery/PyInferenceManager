@@ -9,7 +9,7 @@
 ## 🎉 Release Status Summary
 
 ### GitHub ✅ COMPLETE
-- ✅ Repository: https://github.com/Mullassery/pyinferencemanager
+- ✅ Repository: ../pyinferencemanager
 - ✅ All commits pushed (b30f49f latest)
 - ✅ Tags created: v0.2.0, v0.3.0
 - ✅ Full documentation included
@@ -75,7 +75,7 @@ pip install pyinferencemanager==0.2.0
 
 ### From Source (Immediate)
 ```bash
-git clone https://github.com/Mullassery/pyinferencemanager.git
+git clone ../pyinferencemanager
 cd pyinferencemanager
 git checkout v0.3.0  # or v0.2.0
 maturin develop
@@ -270,9 +270,9 @@ Result (output, cost, latency, engines used)
 ## 📞 Support & Documentation
 
 ### GitHub
-- **Repository:** https://github.com/Mullassery/pyinferencemanager
-- **Issues:** https://github.com/Mullassery/pyinferencemanager/issues
-- **Discussions:** https://github.com/Mullassery/pyinferencemanager/discussions
+- **Repository:** ../pyinferencemanager
+- **Issues:** ../pyinferencemanager/issues
+- **Discussions:** ../pyinferencemanager/discussions
 
 ### Documentation
 - **README:** Feature overview, quick start, benchmarks

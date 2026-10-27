@@ -5,7 +5,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/pyinferencemanager)](https://pypi.org/project/pyinferencemanager/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
-[![Tests](https://img.shields.io/github/actions/workflow/status/Mullassery/PyInferenceManager/tests.yml?label=tests)](https://github.com/Mullassery/PyInferenceManager/actions)
+[![Tests](https://img.shields.io/github/actions/workflow/status/Mullassery/PyInferenceManager/tests.yml?label=tests)](../PyInferenceManager/actions)
 
 ## What it is
 
@@ -326,13 +326,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup and PR expectations, and
 
 Other tools from the same family, for adjacent parts of the LLM/AI stack:
 
-- [PyTokenCalc](https://github.com/Mullassery/PyTokenCalc) — count tokens and estimate LLM costs across 20+ providers before you send a request.
-- [OpenAnchor](https://github.com/Mullassery/OpenAnchor) — token intelligence middleware for multi-provider LLM usage: 6D attribution, pattern detection, recommendations, OTEL export.
-- [PyVectorHound](https://github.com/Mullassery/PyVectorHound) — diagnostic engine for RAG retrieval failures: component-level analysis, root cause detection, and optimization recommendations.
-- [PyStreamMCP](https://github.com/Mullassery/PyStreamMCP) — intelligence layer for AI agents: query planning, context discovery, and cost optimization.
-- [PyStreamAI](https://github.com/Mullassery/PyStreamAI) — ML deployment toolkit: canary/A-B routing, cost tracking, request scheduling, hot model reload, and ONNX Runtime inference.
+- [PyTokenCalc](../PyTokenCalc) — count tokens and estimate LLM costs across 20+ providers before you send a request.
+- [OpenAnchor](../OpenAnchor) — token intelligence middleware for multi-provider LLM usage: 6D attribution, pattern detection, recommendations, OTEL export.
+- [PyVectorHound](../PyVectorHound) — diagnostic engine for RAG retrieval failures: component-level analysis, root cause detection, and optimization recommendations.
+- [PyStreamMCP](../PyStreamMCP) — intelligence layer for AI agents: query planning, context discovery, and cost optimization.
+- [PyStreamAI](../PyStreamAI) — ML deployment toolkit: canary/A-B routing, cost tracking, request scheduling, hot model reload, and ONNX Runtime inference.
 
-[Browse all projects →](https://github.com/Mullassery?tab=repositories)
+[Browse all projects →](../Mullassery-profile)
 
 ## License
 

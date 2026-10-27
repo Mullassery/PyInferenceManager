@@ -52,7 +52,7 @@ pip install pyinferencemanager==0.2.0
 **Version:** 0.2.0  
 **License:** Proprietary  
 **Author:** Georgi Mammen Mullassery  
-**Repository:** https://github.com/Mullassery/pyinferencemanager
+**Repository:** ../pyinferencemanager
 
 ## Contents
 

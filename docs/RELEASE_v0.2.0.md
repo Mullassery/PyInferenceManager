@@ -99,7 +99,7 @@ poetry publish
 - **Name:** `pyinferencemanager`
 - **Current Version:** 0.2.0
 - **License:** Proprietary
-- **Repository:** https://github.com/Mullassery/pyinferencemanager
+- **Repository:** ../pyinferencemanager
 - **Author:** Georgi Mammen Mullassery
 
 ## Key Capabilities
@@ -155,7 +155,7 @@ pip install pyinferencemanager==0.2.0
 
 ## Support & Issues
 
-For bug reports and feature requests, visit: https://github.com/Mullassery/pyinferencemanager/issues
+For bug reports and feature requests, visit: ../pyinferencemanager/issues
 
 ---
 

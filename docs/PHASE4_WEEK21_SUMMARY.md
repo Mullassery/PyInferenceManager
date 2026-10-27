@@ -285,7 +285,7 @@ for i in 0..1000 {
 ## 🔄 Continuous Integration
 
 ### GitHub Status
-- ✅ Repository: https://github.com/Mullassery/pyinferencemanager
+- ✅ Repository: ../pyinferencemanager
 - ✅ Branch: main (production)
 - ✅ Last Push: Week 21 real load testing
 - ✅ CI/CD: Configured and passing

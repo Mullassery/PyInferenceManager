@@ -4,7 +4,7 @@
 **Version:** 0.2.0  
 **Status:** ✅ **Production Ready**  
 **Tests:** 299 passing (100%)  
-**GitHub:** https://github.com/Mullassery/pyinferencemanager  
+**GitHub:** ../pyinferencemanager  
 
 ---
 
@@ -154,7 +154,7 @@ PyInferenceManager (Rust Core + Python Bindings)
 - **Location:** `target/wheels/` or PyPI (ready to publish)
 
 ### Repository
-- **GitHub:** https://github.com/Mullassery/pyinferencemanager
+- **GitHub:** ../pyinferencemanager
 - **Branch:** main (production-ready)
 - **Tags:** v0.2.0 (release tag)
 - **License:** Proprietary
@@ -319,7 +319,7 @@ PyInferenceManager (Rust Core + Python Bindings)
 ### Contact
 - **Email:** mullassery@gmail.com
 - **GitHub:** @Mullassery
-- **Repository:** https://github.com/Mullassery/pyinferencemanager
+- **Repository:** ../pyinferencemanager
 
 ---
 
@@ -349,7 +349,7 @@ PyInferenceManager (Rust Core + Python Bindings)
 
 **Status:** ✅ Phase 3 Complete  
 **Version:** 0.2.0 Production Ready  
-**Repository:** https://github.com/Mullassery/pyinferencemanager  
+**Repository:** ../pyinferencemanager  
 **Python Package:** Ready for PyPI  
 
 **Total Development Time:** 20 weeks  

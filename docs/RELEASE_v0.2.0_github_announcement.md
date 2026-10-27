@@ -67,7 +67,7 @@ pip install pyinferencemanager==0.2.0
 
 Or from GitHub releases:
 ```bash
-pip install https://github.com/Mullassery/pyinferencemanager/releases/download/v0.2.0/pyinferencemanager-0.2.0-cp310-abi3-macosx_11_0_arm64.whl
+pip install ../pyinferencemanager/releases/download/v0.2.0/pyinferencemanager-0.2.0-cp310-abi3-macosx_11_0_arm64.whl
 ```
 
 ## 💻 Quick Example
@@ -140,13 +140,13 @@ Contributions welcome! Help us reach v1.0 by:
 
 ## 📞 Support
 
-- **Issues**: https://github.com/Mullassery/pyinferencemanager/issues
-- **Discussions**: https://github.com/Mullassery/pyinferencemanager/discussions
-- **Docs**: https://github.com/Mullassery/pyinferencemanager/blob/main/README.md
+- **Issues**: ../pyinferencemanager/issues
+- **Discussions**: ../pyinferencemanager/discussions
+- **Docs**: ../pyinferencemanager/blob/main/README.md
 
 ## 📄 License
 
-Proprietary License - See [LICENSE](https://github.com/Mullassery/pyinferencemanager/blob/main/LICENSE)
+Proprietary License - See [LICENSE](../pyinferencemanager/blob/main/LICENSE)
 
 ---
 

@@ -253,5 +253,5 @@ PyInferenceManager (Control Plane)
 ## Contact & Contributors
 
 - **Author**: Georgi Mammen Mullassery (mullassery@gmail.com)
-- **Repository**: https://github.com/Mullassery/pyinferencemanager
+- **Repository**: ../pyinferencemanager
 - **License**: MIT
