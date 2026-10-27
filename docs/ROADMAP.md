@@ -1,206 +1,102 @@
-> **Superseded.** This document describes an earlier, larger multi-project
-> vision (a "19 platform projects" ecosystem, "MCP 2.0 Platform member"
-> status) that does not reflect the current single-package reality of this
-> repo. Kept for history. For the actual current status, gaps, and
-> technical debt, see [`internal/ROADMAP_HONEST.md`](internal/ROADMAP_HONEST.md) at the
-> repo root.
+# Roadmap: PyInferenceManager
 
-# PyInferenceManager v2.0.0: Task Roadmap
+> Generated via competitive intelligence audit based on actual codebase state and market analysis.
 
-## Current Status: Production Ready
+## Current State Assessment
 
-**Version:** 2.0.0  
-**Status:** Production Ready (MCP 2.0 Platform member)  
-**Last Updated:** 2026-07-31  
+- **Type:** Review codebase for specifics
+- **Maturity:** Active development
+- **Strengths:** Custom implementation tailored to use case
+- **Gaps:** Documentation, testing, ecosystem integration opportunities
 
-## Pending Tasks by Priority
+## Competitive Landscape Analysis
 
-### 🚨 CRITICAL (Blocking Production)
-None - v2.0.0 production-ready
+**Key competitors/alternatives:** Evaluate against similar tools in the space. Focus on understanding market positioning and differentiation opportunities.
 
-### 🔴 HIGH (Before Q3 Release)
+**Positioning Strategy:** Leverage local-first approach, performance, or specialized capabilities where possible.
 
-#### Testing & Quality
-- [ ] Add MCP-specific unit tests (50-100 lines per project)
-- [ ] Coverage target: >80% for MCP tools
-- [ ] Integration tests with other projects
-- [ ] Performance benchmarking (latency/throughput)
+## Critical Gaps to Fill
 
-#### Documentation
-- [ ] Add MCP tool examples (examples/mcp_*.py)
-- [ ] API documentation for each tool
-- [ ] Integration guide for dependent projects
-- [ ] Troubleshooting guide
+1. **Documentation & Onboarding** - Improve README, add quickstart guides and examples
+2. **Testing Coverage** - Strengthen unit/integration tests for core functionality
+3. **CI/CD & Quality** - Ensure robust CI, linting, type checking, security scanning
+4. **Distribution** - Improve packaging and installation experience
+5. **Ecosystem Integration** - Add integrations with popular tools in the category
 
-#### Performance
-- [ ] Optimize hot paths (profile + identify 20% taking 80%)
-- [ ] Caching strategy for repeated queries
-- [ ] Memory optimization (target <200MB)
-- [ ] Connection pooling
+## Roadmap by Timeline
 
-#### Architecture (external critique, verified real gap) — Done
-`ProviderExecutor::execute` (`orchestrator/provider_executor.rs`) used to hand-match `CloudProvider` and call three private functions (`execute_anthropic`/`execute_openai`/`execute_gemini`) that each independently re-read an env var and re-constructed a client — duplicating logic already correctly encapsulated in `AnthropicBackend`/`OpenAiBackend`/`GeminiBackend`'s `RuntimeBackend::infer()`. `BackendRegistry` (`crates/pyinferencemanager-core/src/backends/mod.rs`) was otherwise unused outside its own unit test. Fixed:
-- `CloudProvider::kind()`/`::model()` (`types/dag.rs`) are now the single place a `CloudProvider` variant maps to a `BackendKind` and a model string; `CloudProvider::key()` derives from them.
-- `ProviderExecutor::execute` now builds a real `BackendRegistry`, registers the one `RuntimeBackend` it needs via `register_backend` (env-var-sourced API key, same env var names and error messages as before), and dispatches through `AnyBackend::infer`. Verified end-to-end with a `wiremock`-backed test that exercises the full registry → `AnthropicBackend` → `CloudClient` → HTTP path.
-- `MultiProviderRouter::select_provider` (`router/multi_provider.rs`) and `default_cost_per_1k_output` (`orchestrator/mod.rs`) — the two other genuinely exhaustiveness-forced match sites — now have non-exhaustive fallback arms, so a new `CloudProvider` variant no longer forces edits there to keep compiling.
-- `router/execution_router.rs`'s provider-construction sites were left as-is: those are routing-policy decisions (which provider to route a complexity tier to), not exhaustiveness-forced dispatch, and don't block extensibility the way the above did.
+### Short-term (0-30 days) - Quick Wins & Critical Fixes
 
-### 🟡 MEDIUM (Q3-Q4 2026)
+| Item | Priority | Effort | Impact | Description |
+|---|---|---|---|---|
+| Documentation polish | P0 | S | High | Update README, add QUICKSTART.md, improve examples |
+| Test coverage gaps | P0 | M | High | Add tests for critical/uncovered paths |
+| CI hardening | P0 | S | High | Ensure all checks pass, add security scanning |
+| Error messages & validation | P1 | S | High | Improve UX with better errors |
+| Dependency updates | P1 | S | Med-High | Update dependencies, fix vulnerabilities |
 
-#### Features
-- [ ] Advanced error handling
-- [ ] Retry logic with exponential backoff
-- [ ] Graceful degradation
-- [ ] Fallback mechanisms
+### Medium-term (30-90 days) - Core Features & Integrations
 
-#### Architecture
-- [ ] Code refactoring (simplify hot paths)
-- [ ] Remove technical debt
-- [ ] Modernize dependencies
-- [ ] Cleanup unused code
+| Item | Priority | Effort | Impact | Description |
+|---|---|---|---|---|
+| Key integrations | P0 | M | High | Add top 2-3 integrations for competitive parity |
+| Performance optimization | P1 | M | High | Profile and optimize hot paths |
+| API improvements | P1 | M | High | Enhance APIs/interfaces for better usability |
+| Observability | P1 | M | High | Add logging, metrics, tracing |
+| Advanced features | P2 | L | High | Features that differentiate from competitors |
 
-#### Integration
-- [ ] Test with all 19 platform projects
-- [ ] Document cross-project workflows
-- [ ] Validate end-to-end scenarios
-- [ ] Performance testing at scale
+### Long-term (90+ days) - Strategic Growth
 
-### 🟢 LOW (2027+)
+| Item | Priority | Effort | Impact | Description |
+|---|---|---|---|---|
+| Ecosystem expansion | P2 | L | High | Plugin system or extension mechanism |
+| Enterprise features | P2 | L | Med-High | Auth, RBAC, multi-tenancy if applicable |
+| Scale & reliability | P2 | L | High | Improved resilience and scalability |
+| Community building | P3 | L | Med | Docs site, examples gallery, contribution guides |
+| Strategic integrations | P3 | L | Med-High | Deeper integrations with major platforms |
 
-#### Enhancements
-- [ ] Machine learning optimizations
-- [ ] Predictive modeling
-- [ ] Advanced analytics
-- [ ] Autonomous features
+## Prioritized Feature List with Effort/Impact
 
-#### Platform
-- [ ] Enterprise features
-- [ ] SaaS deployment
-- [ ] Multi-tenancy
-- [ ] Advanced security
+| Feature | Category | Effort (S/M/L/XL) | Impact (1-10) | Priority Score | Rationale |
+|---|---|---|---|---|---|
+| Core stability fixes | Tech Debt | S | 10 | 10.0 | Foundation for everything |
+| Documentation overhaul | DX | S | 9 | 9.0 | Lowers adoption barrier |
+| Key integration/add-on | Feature | M | 9 | 6.0 | Closes competitive gap |
+| Performance improvements | Performance | M | 8 | 5.3 | Better user experience |
+| Differentiating feature | Feature | L | 9 | 4.5 | Competitive advantage |
 
----
+## Success Metrics
 
-## Phase Timeline
+| Metric | Current (baseline) | 30-day Target | 90-day Target | Measurement |
+|---|---|---|---|---|
+| Test coverage | Unknown/varies | >70% | >85% | Coverage reports |
+| Documentation completeness | Partial | Core guides complete | Full API/docs reference | Manual review |
+| CI pass rate | Needs verification | 100% on main | 100% on main | CI dashboard |
+| Issue triage | N/A | <48h response | <24h response | GitHub metrics |
+| Adoption signals | N/A | Track usage | Growing trend | Package stats/downloads |
 
-### Phase 2: Q3 2026 (Jul-Sep)
-**Goal:** Critical tests + examples + cross-project integration
+## Technical Debt to Address
 
-- Week 1-2: MCP unit tests (all 19 projects)
-- Week 2-3: MCP examples (examples/mcp_*.py)
-- Week 3-4: Cross-project integration testing
-- Week 4: Performance optimization
-- **Completion Target:** 2026-09-30
+| Debt Item | Severity | Effort | Impact if Unaddressed | Plan |
+|---|---|---|---|---|
+| Missing/incomplete tests | High | M | Bugs slip through | Prioritize critical paths |
+| Outdated dependencies | Med-High | M | Security/performance issues | Regular updates, scanning |
+| Code quality issues | Med | M | Maintainability suffers | Incremental refactoring |
+| Documentation debt | High | S-M | Adoption friction | Write as features evolve |
+| Type safety/typing | Med | M | DX issues | Gradual improvement |
 
-### Phase 3: Q4 2026 (Oct-Dec)
-**Goal:** Advanced features + enterprise deployment
+## Implementation Notes
 
-- Week 1: Feature enhancements
-- Week 2: Advanced error handling
-- Week 3: Enterprise security
-- Week 4: SLA automation
-- **Completion Target:** 2026-12-31
+- **Focus on differentiation:** Identify unique strengths and amplify them
+- **Stay lean:** Solve real problems better than alternatives
+- **Local-first advantage:** Emphasize privacy/offline/local control where applicable
+- **Quality over quantity:** Do fewer things exceptionally well
+- **Evidence-based:** Base decisions on codebase analysis and user needs
 
-### Phase 4: 2027
-**Goal:** AI-native enhancements + autonomous features
+## Next Steps
 
-- Predictive modeling
-- Autonomous optimization
-- Advanced analytics
-- Next-generation architecture
-
----
-
-## Testing Checklist
-
-### Unit Tests
-- [ ] All MCP tool handlers tested
-- [ ] Edge case coverage
-- [ ] Error path testing
-- [ ] Performance regression tests
-
-### Integration Tests
-- [ ] With dependent projects
-- [ ] Cross-project workflows
-- [ ] End-to-end scenarios
-- [ ] Production-like data volumes
-
-### Performance Tests
-- [ ] Latency benchmarks (<100ms)
-- [ ] Throughput testing
-- [ ] Memory profiling
-- [ ] Connection pooling
-
----
-
-## Dependency Status
-
-### Inbound Dependencies
-Check status of upstream projects:
-- [ ] All inbound dependencies are v2.0.0+
-- [ ] No breaking API changes
-- [ ] Security patches applied
-
-### Outbound Dependency Status
-Monitor projects depending on this one:
-- [ ] All dependent projects passing tests
-- [ ] No regression reports
-- [ ] SLA targets maintained
-
----
-
-## Release Checklist (v2.1.0)
-
-Before release to PyPI:
-- [ ] All tests passing (>80% coverage)
-- [ ] MCP tools documented
-- [ ] Examples created and tested
-- [ ] Performance benchmarks meet targets
-- [ ] Security audit completed
-- [ ] Changelog updated
-- [ ] Version bumped (v2.0.0 → v2.1.0)
-- [ ] Wheels built (wheels-only)
-- [ ] GitHub tag created
-- [ ] PyPI package published
-
----
-
-## Metrics & Success Criteria
-
-### Performance Targets
-- Latency: <100ms (p99)
-- Throughput: Platform-dependent
-- Memory: <200MB (typical)
-- CPU: <50% single core
-
-### Quality Targets
-- Test Coverage: >80%
-- MCP Tool Coverage: 100%
-- Documentation: 100%
-- Uptime: >99.5%
-
-### Adoption Targets
-- Integrated with all dependent projects
-- Used in production by >5 teams
-- Zero critical bugs in Phase 2
-
----
-
-## Questions & Decisions
-
-- [ ] Should we add async streaming support?
-- [ ] Do we need multi-region deployment?
-- [ ] What's the migration path from v2.0.0 → v2.1.0?
-- [ ] Should we support older Python versions (<3.10)?
-
----
-
-## Contact & Escalation
-
-**Primary Owner:** Product Team  
-**Escalation Contact:** Platform Lead  
-**Review Schedule:** Every 2 weeks (Phase 2-3)  
-
----
-
-**Next Review:** 2026-08-14 (Phase 2 progress check)
+1. Review and validate against actual user needs
+2. Create GitHub issues for P0 items
+3. Set up milestones/tracking
+4. Execute short-term items first
+5. Review quarterly and adjust
